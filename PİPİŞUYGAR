@@ -1,0 +1,1499 @@
+-- =================================================================
+-- PURE UNIVERSAL VEHICLE TUNER V8.8.10 + TOWNCOMBAT & COMBAT2
+-- DEVELOPED BY: MadeByArman
+-- =================================================================
+
+print("[Tuner & Combat2 | MadeByArman] Gelişmiş Aim ve Extrapolation Sistemi Yükleniyor...")
+
+local successLib, VenyxLibrary = pcall(function()
+    return loadstring(game:HttpGet("https://raw.githubusercontent.com/Armichan69/UniversalCarTuner/refs/heads/main/universalcarchanger"))()
+end)
+
+if not successLib or not VenyxLibrary then
+    warn("[Tuner HATA] UI Kütüphanesi yüklenemedi!")
+    return
+end
+
+local Venyx = VenyxLibrary.new("Tuner V8.8.10 | MadeByArman PRO + TownCombat", 5013109572)
+
+-- NEON MOR PREMIUM TEMA
+local CurrentTheme = {
+    Background = Color3.fromRGB(20, 15, 28), 
+    Glow = Color3.fromRGB(150, 40, 255), 
+    Accent = Color3.fromRGB(35, 25, 45), 
+    LightContrast = Color3.fromRGB(45, 35, 60), 
+    DarkContrast = Color3.fromRGB(15, 10, 20),  
+    TextColor = Color3.fromRGB(240, 240, 240)
+}
+for prop, color in pairs(CurrentTheme) do pcall(function() Venyx:setTheme(prop, color) end) end
+
+-- SERVİSLER
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")
+local CoreGui = game:GetService("CoreGui")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+local AllConnections = {}
+local AllTasks = {}
+local scriptRunning = true
+
+local velocityEnabled = false
+local flightEnabled = false
+local ghostModeEnabled = false
+local carJumpEnabled = false
+local defaultCharacterParent = nil
+local menuToggleKey = Enum.KeyCode.RightControl
+
+-- BAŞLANGIÇ DEĞERLERİ
+local accelPower = 30
+local topSpeed = 500
+local brakePower = 5 / 4000
+local downforceMult = 0
+local gripMult = 0
+local handlingBoost = 0
+local flightSpeed = 3
+local jumpPower = 50
+
+-- TRAFİK VE SPAWNER DEĞİŞKENLERİ
+local trafficUnderground = false
+local trafficNoCollide = false
+local trafficDestroy = false
+local FoundVehicles = {}
+local targetSpawnName = ""
+
+-- =================================================================
+-- COMBAT & NPC KONTROL DEĞİŞKENLERİ (GELİŞTİRİLMİŞ)
+-- =================================================================
+local tcAimAssistEnabled = false
+local tcQuickScopeEnabled = false
+local tcAimSmoothness = 0.12 -- Daha akıcı olması için optimize edildi
+local tcFovRadius = 120
+local tcFovCircleEnabled = false
+local tcWallCheckEnabled = true
+local tcTeamCheckEnabled = false
+local tcTargetNpcsEnabled = false
+local tcAimPartOption = "Head" -- Geliştirilmiş: Head veya Torso seçimi
+
+-- TAM OTOMATİK EXTRAPOLATION & RASTGELE BOX AYARLARI
+local tcExtrapolationEnabled = false
+local tcRandomBoxEnabled = false
+local tcRandomBoxOffset = 8
+
+local tcNoRecoilEnabled = false
+local tcNoSpreadEnabled = false
+local tcNoAimSwayEnabled = false
+local tcNoScopeSwayEnabled = false
+local tcInfiniteAmmoEnabled = false
+local tcFireRateEnabled = false
+
+-- GÖRSEL (VISUALS) AYARLARI (VARSAYILAN KAPALI)
+local tcEspBoxEnabled = false
+local tcEspHealthBarEnabled = false
+local tcTeamEspEnabled = false
+local tcSkeletonEspEnabled = false
+local tcHeadDotEspEnabled = false
+local tcEspNameEnabled = false
+local tcChamsEnabled = false
+local tcNpcEspEnabled = false
+local tcItemEspEnabled = false
+
+local tcVisibleColor = Color3.fromRGB(0, 255, 100)
+local tcHiddenColor = Color3.fromRGB(255, 30, 30)
+local tcTeamEspColor = Color3.fromRGB(50, 150, 255)
+local tcItemEspColor = Color3.fromRGB(255, 215, 0)
+
+local tcFullBrightEnabled = false
+local tcRemoveGrassEnabled = false
+
+local tcConfigFolder = "TownProConfigs"
+pcall(function() if isfolder and not isfolder(tcConfigFolder) then makefolder(tcConfigFolder) end end)
+local tcCfgName = "DefaultConfig"
+
+local tcNormalLightingSettings = {
+    Brightness = Lighting.Brightness,
+    ClockTime = Lighting.ClockTime,
+    FogEnd = Lighting.FogEnd,
+    GlobalShadows = Lighting.GlobalShadows,
+    Ambient = Lighting.Ambient,
+    OutdoorAmbient = Lighting.OutdoorAmbient
+}
+
+local function tcToggleFullbright(state)
+    tcFullBrightEnabled = state
+    pcall(function()
+        if state then
+            Lighting.Brightness = 1.2
+            Lighting.ClockTime = 12
+            Lighting.FogEnd = 100000
+            Lighting.GlobalShadows = false
+            Lighting.Ambient = Color3.fromRGB(160, 160, 160)
+            Lighting.OutdoorAmbient = Color3.fromRGB(160, 160, 160)
+        else
+            Lighting.Brightness = tcNormalLightingSettings.Brightness
+            Lighting.ClockTime = tcNormalLightingSettings.ClockTime
+            Lighting.FogEnd = tcNormalLightingSettings.FogEnd
+            Lighting.GlobalShadows = tcNormalLightingSettings.GlobalShadows
+            Lighting.Ambient = tcNormalLightingSettings.Ambient
+            Lighting.OutdoorAmbient = tcNormalLightingSettings.OutdoorAmbient
+        end
+    end)
+end
+
+local function tcRemoveGrassAndLeaves()
+    pcall(function()
+        sethiddenproperty(workspace.Terrain, "Decoration", false)
+    end)
+    task.spawn(function()
+        pcall(function()
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Grass") or obj:IsA("Foliage") then
+                    obj:Destroy()
+                elseif obj:IsA("BasePart") or obj:IsA("Model") then
+                    local name = obj.Name:lower()
+                    if name:find("grass") or name:find("foliage") or name:find("bush") or name:find("leaf") or name:find("leaves") or name:find("branch") then
+                        obj:Destroy()
+                    end
+                end
+            end
+        end)
+    end)
+end
+
+local function tcIsPartVisible(part, model)
+    if not part then return false end
+    local char = LocalPlayer.Character
+    if not char then return false end
+    
+    local origin = Camera.CFrame.Position
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.FilterDescendantsInstances = {char, model}
+    
+    local result = workspace:Raycast(origin, part.Position - origin, raycastParams)
+    return result == nil
+end
+
+-- =================================================================
+-- GELİŞTİRİLMİŞ BULLET SPEED & EXTRAPOLATION HESAPLAMA SİSTEMİ
+-- =================================================================
+local function GetAutoBulletSpeed()
+    local char = LocalPlayer.Character
+    local tool = char and char:FindFirstChildOfClass("Tool")
+    if tool then
+        for _, v in ipairs(tool:GetDescendants()) do
+            if v:IsA("NumberValue") or v:IsA("IntValue") then
+                local name = v.Name:lower()
+                if name:find("speed") or name:find("velocity") or name:find("muzzle") or name:find("bullet") then
+                    if v.Value > 10 then return v.Value end
+                end
+            end
+        end
+        for _, attr in ipairs({"BulletSpeed", "Speed", "MuzzleVelocity", "Velocity", "Projectilespeed"}) do
+            local val = tool:GetAttribute(attr)
+            if type(val) == "number" and val > 10 then return val end
+        end
+    end
+    return 3500 -- Optimize edilmiş varsayılan mermi hızı
+end
+
+local function CalculateExtrapolatedPosition(targetPart)
+    if not targetPart then return nil end
+    local targetPosition = targetPart.Position
+
+    if not tcExtrapolationEnabled then
+        return targetPosition
+    end
+
+    local localChar = LocalPlayer.Character
+    local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
+    if not localRoot then return targetPosition end
+
+    local myVel = localRoot.AssemblyLinearVelocity or Vector3.new(0,0,0)
+    local targetVel = targetPart.AssemblyLinearVelocity or Vector3.new(0,0,0)
+
+    local autoBulletSpeed = GetAutoBulletSpeed()
+    local distance = (targetPosition - Camera.CFrame.Position).Magnitude
+    local timeToHit = distance / math.max(autoBulletSpeed, 1)
+
+    -- Geliştirilmiş lineer öngörü ve yerçekimi kompanzasyonu
+    local predictedPos = targetPosition + ((targetVel - myVel) * timeToHit) + Vector3.new(0, math.min(distance * 0.0015, 3), 0)
+    return predictedPos
+end
+
+local function GetVehicleSeat()
+    local char = LocalPlayer.Character
+    if not char then return nil end
+    local hum = char:FindFirstChildWhichIsA("Humanoid")
+    if hum and hum.SeatPart and (hum.SeatPart:IsA("VehicleSeat") or hum.SeatPart:IsA("Seat")) then
+        return hum.SeatPart
+    end
+    return nil
+end
+
+local function IsPlayerOrPlayerCar(model)
+    if not model then return true end
+    if model == LocalPlayer.Character then return true end
+    
+    local char = LocalPlayer.Character
+    local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+    local mySeat = GetVehicleSeat()
+    local myCar = mySeat and mySeat:FindFirstAncestorWhichIsA("Model")
+    
+    if rootPart and model:IsA("Model") then
+        pcall(function()
+            local modelPos = model:GetPivot().Position
+            if (modelPos - rootPart.Position).Magnitude < 35 then
+                return true
+            end
+        end)
+    end
+    
+    if model == myCar or (myCar and (myCar:IsAncestorOf(model) or model:IsAncestorOf(myCar))) then
+        return true
+    end
+    
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Character == model or (p.Character and p.Character:IsAncestorOf(model)) then
+            return true
+        end
+    end
+    
+    return false
+end
+
+local function IsGenericTrafficCar(model)
+    if not model:IsA("Model") then return false end
+    if IsPlayerOrPlayerCar(model) then return false end
+
+    local nameLower = model.Name:lower()
+    local pathLower = model:GetFullName():lower()
+
+    if nameLower:find("police") or nameLower:find("cop") or nameLower:find("law") or nameLower:find("enforcement") or nameLower:find("swat") or nameLower:find("officer") or
+       pathLower:find("police") or pathLower:find("cop") or pathLower:find("law") or pathLower:find("enforcement") or pathLower:find("swat") then
+        return false
+    end
+
+    if nameLower:find("traffic") or nameLower:find("npc") or nameLower:find("civilian") or nameLower:find("bot") or nameLower:find("car") or nameLower:find("vehicle") or
+       pathLower:find("traffic") or pathLower:find("civilian") then
+        return true
+    end
+
+    if model:FindFirstChildWhichIsA("VehicleSeat", true) or model:FindFirstChildWhichIsA("Seat", true) then
+        return true
+    end
+
+    local isCarSized = false
+    pcall(function()
+        local size = model:GetExtentsSize()
+        if size.X > 3 and size.Y > 1.5 and size.Z > 3 and size.X < 35 and size.Z < 35 then
+            isCarSized = true
+        end
+    end)
+
+    return isCarSized
+end
+
+-- =================================================================
+-- COMBAT2 DEĞİŞKENLERİ (HITMARKER & BULLET PENETRATION)
+-- =================================================================
+local c2AltNoRecoil = false
+local c2AltInfiniteAmmo = false
+local c2AltRapidFire = false
+local c2HitboxExpander = false
+local c2HitboxSize = 5
+local c2HitboxTransparency = 70
+
+local c2SilentAim = false
+local c2MagicBullet = false
+local c2TriggerBot = false
+local c2AltNoSpread = false
+
+local c2HitmarkerEnabled = false
+local c2PenetrationIndicatorEnabled = false
+
+local Combat2Page = Venyx:addPage("Combat2", 8356815386)
+
+local c2Sec1 = Combat2Page:addSection("Alternatif Silah & Mermi Modları")
+c2Sec1:addToggle("Alt NoRecoil (Kamera Tepme Kilidi)", c2AltNoRecoil, function(v) c2AltNoRecoil = v end)
+c2Sec1:addToggle("Alt Infinite Ammo (Sürekli Mermi Yenileme)", c2AltInfiniteAmmo, function(v) c2AltInfiniteAmmo = v end)
+c2Sec1:addToggle("Alt Rapid Fire (Seri Ateş Tetikleyici)", c2AltRapidFire, function(v) c2AltRapidFire = v end)
+c2Sec1:addToggle("Alt NoSpread (Mermi Dağılmasını Sil)", c2AltNoSpread, function(v) c2AltNoSpread = v end)
+
+local c2Sec2 = Combat2Page:addSection("Gelişmiş Combat Metotları")
+c2Sec2:addToggle("Silent Aim (Gizli Hedef Kilitlenme)", c2SilentAim, function(v) c2SilentAim = v end)
+c2Sec2:addToggle("Magic Bullet (Mermiyi Hedefe Işınla)", c2MagicBullet, function(v) c2MagicBullet = v end)
+c2Sec2:addToggle("Auto Fire / TriggerBot (Otomatik Ateş)", c2TriggerBot, function(v) c2TriggerBot = v end)
+
+local c2Sec3 = Combat2Page:addSection("Hitbox Genişletici (Player & NPC Uyumlu)")
+c2Sec3:addToggle("Hitbox Genişleticiyi Aç", c2HitboxExpander, function(v) c2HitboxExpander = v end)
+c2Sec3:addSlider("Hitbox Boyutu", 5, 2, 25, function(v) c2HitboxSize = v end)
+c2Sec3:addSlider("Hitbox Saydamlığı", 70, 0, 100, function(v) c2HitboxTransparency = v end)
+
+local c2Sec4 = Combat2Page:addSection("Hitmarker & Mermi Delme Göstergesi")
+c2Sec4:addToggle("Hitmarker (Vuruş İşareti)", c2HitmarkerEnabled, function(v) c2HitmarkerEnabled = v end)
+c2Sec4:addToggle("Bullet Penetration Indicator (Mermi Delme Göstergesi)", c2PenetrationIndicatorEnabled, function(v) c2PenetrationIndicatorEnabled = v end)
+
+-- Hitmarker Çizimleri (Drawing API)
+local hmLine1 = Drawing.new("Line")
+local hmLine2 = Drawing.new("Line")
+local hmLine3 = Drawing.new("Line")
+local hmLine4 = Drawing.new("Line")
+for _, l in ipairs({hmLine1, hmLine2, hmLine3, hmLine4}) do
+    l.Visible = false
+    l.Thickness = 2
+    l.Color = Color3.fromRGB(255, 255, 255)
+end
+
+local function triggerHitmarker()
+    if not c2HitmarkerEnabled then return end
+    task.spawn(function()
+        local center = Camera.ViewportSize / 2
+        local size = 8
+        hmLine1.From = center - Vector2.new(size, size) hmLine1.To = center - Vector2.new(3, 3)
+        hmLine2.From = center + Vector2.new(size, -size) hmLine2.To = center + Vector2.new(3, -3)
+        hmLine3.From = center - Vector2.new(size, -size) hmLine3.To = center - Vector2.new(3, -3)
+        hmLine4.From = center + Vector2.new(size, size) hmLine4.To = center + Vector2.new(3, 3)
+        
+        for _, l in ipairs({hmLine1, hmLine2, hmLine3, hmLine4}) do l.Visible = true l.Color = Color3.fromRGB(255, 255, 255) end
+        task.wait(0.1)
+        for _, l in ipairs({hmLine1, hmLine2, hmLine3, hmLine4}) do l.Visible = false end
+    end)
+end
+
+local activePenetrationDots = {}
+
+local function createPenetrationDot(pos, isPenetrated)
+    if not c2PenetrationIndicatorEnabled then return end
+    pcall(function()
+        local dot = Drawing.new("Circle")
+        dot.Visible = true
+        dot.Radius = 4
+        dot.Filled = true
+        dot.Color = isPenetrated and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+        
+        table.insert(activePenetrationDots, {Dot = dot, Position = pos, Time = tick()})
+    end)
+end
+
+table.insert(AllConnections, UserInputService.InputBegan:Connect(function(input, gp)
+    if not scriptRunning or gp then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local char = LocalPlayer.Character
+        local tool = char and char:FindFirstChildOfClass("Tool")
+        if tool then
+            triggerHitmarker()
+            
+            if c2PenetrationIndicatorEnabled then
+                pcall(function()
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local unitRay = Camera:ViewportPointToRay(mousePos.X, mousePos.Y)
+                    local rayParams = RaycastParams.new()
+                    rayParams.FilterType = Enum.RaycastFilterType.Exclude
+                    rayParams.FilterDescendantsInstances = {char}
+                    
+                    local result = workspace:Raycast(unitRay.Origin, unitRay.Direction * 1000, rayParams)
+                    if result then
+                        local hitPart = result.Instance
+                        local isPenetrated = hitPart.Size.Magnitude < 4 or hitPart.Transparency > 0.5 or hitPart.CanCollide == false
+                        createPenetrationDot(result.Position, isPenetrated)
+                    end
+                end)
+            end
+        end
+    end
+end))
+
+table.insert(AllTasks, task.spawn(function()
+    while scriptRunning do
+        task.wait(0.15)
+        pcall(function()
+            if c2AltInfiniteAmmo then
+                local char = LocalPlayer.Character
+                local bp = LocalPlayer:FindFirstChild("Backpack")
+                local function refill(container)
+                    if not container then return end
+                    for _, tool in ipairs(container:GetChildren()) do
+                        if tool:IsA("Tool") then
+                            for _, val in ipairs(tool:GetDescendants()) do
+                                if (val:IsA("IntValue") or val:IsA("NumberValue")) and (val.Name:lower():find("ammo") or val.Name:lower():find("clip") or val.Name:lower():find("mag")) then
+                                    val.Value = 999
+                                end
+                            end
+                        end
+                    end
+                end
+                refill(char)
+                refill(bp)
+            end
+
+            if c2AltRapidFire then
+                local char = LocalPlayer.Character
+                local tool = char and char:FindFirstChildOfClass("Tool")
+                if tool and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+                    tool:Activate()
+                end
+            end
+
+            if c2HitboxExpander then
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and p.Character then
+                        local root = p.Character:FindFirstChild("HumanoidRootPart")
+                        if root then
+                            root.Size = Vector3.new(c2HitboxSize, c2HitboxSize, c2HitboxSize)
+                            root.Transparency = c2HitboxTransparency / 100
+                            root.CanCollide = false
+                        end
+                    end
+                end
+
+                if tcTargetNpcsEnabled then
+                    for _, obj in ipairs(workspace:GetDescendants()) do
+                        if obj:IsA("Model") and obj ~= LocalPlayer.Character then
+                            local hum = obj:FindFirstChildOfClass("Humanoid")
+                            local root = obj:FindFirstChild("HumanoidRootPart")
+                            if hum and hum.Health > 0 and root then
+                                local isPlayer = false
+                                for _, p in ipairs(Players:GetPlayers()) do
+                                    if p.Character == obj then isPlayer = true break end
+                                end
+                                if not isPlayer then
+                                    root.Size = Vector3.new(c2HitboxSize, c2HitboxSize, c2HitboxSize)
+                                    root.Transparency = c2HitboxTransparency / 100
+                                    root.CanCollide = false
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+            if c2TriggerBot then
+                local mouse = LocalPlayer:GetMouse()
+                local target = mouse.Target
+                if target and target.Parent then
+                    local parent = target.Parent
+                    local isEnemy = false
+                    if parent:FindFirstChildOfClass("Humanoid") and parent ~= LocalPlayer.Character then
+                        isEnemy = true
+                    end
+                    if isEnemy then
+                        local tool = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Tool")
+                        if tool then tool:Activate() end
+                    end
+                end
+            end
+        end)
+    end
+end))
+
+-- =================================================================
+-- SEKME 1: UNIVERSAL KONTROLÜ
+-- =================================================================
+local UniversalPage = Venyx:addPage("Araç Kontrolü", 8356815386)
+
+local uControlSec = UniversalPage:addSection("Güç Anahtarı & Özel Güçler")
+uControlSec:addToggle("Universal Motor Fiziğini Aktif Et", velocityEnabled, function(v) velocityEnabled = v end)
+uControlSec:addToggle("Hayalet Mod (Duvarların İçinden Geç)", ghostModeEnabled, function(v) ghostModeEnabled = v end)
+uControlSec:addToggle("Aracı Zıplat (Space Tuşu)", carJumpEnabled, function(v) carJumpEnabled = v end)
+
+local uEngineSec = UniversalPage:addSection("Tork & Hız (Gaz: W)")
+uEngineSec:addSlider("Tork / İvme Gücü", accelPower, 10, 7500, function(v) accelPower = v end)
+uEngineSec:addSlider("Maksimum Hız Limiti", topSpeed, 100, 15000, function(v) topSpeed = v end)
+
+local uHandlingSec = UniversalPage:addSection("Yol Tutuş & Dönüş (Yön: A-D)")
+uHandlingSec:addSlider("Dönüş Hassasiyeti Arttır (Handling)", 0, 0, 1000, function(v) handlingBoost = v / 10 end)
+uHandlingSec:addSlider("Viraj Tutuş (Anti-Kayma %)", 0, 0, 500, function(v) gripMult = v / 100 end)
+uHandlingSec:addSlider("Downforce (Yere Basma Kuvveti)", 0, 0, 500, function(v) downforceMult = v * 5 end)
+
+local uBrakeSec = UniversalPage:addSection("Fren & Durma (Fren: S | El Freni: P)")
+uBrakeSec:addSlider("Fren Gücü (Yumuşatılmış)", 5, 1, 1000, function(v) brakePower = v / 4000 end)
+
+local uFlySec = UniversalPage:addSection("Uçan Araba (Fly Car)")
+uFlySec:addToggle("Uçma Modunu Aç", flightEnabled, function(v) flightEnabled = v end)
+uFlySec:addSlider("Uçuş Hızı", 300, 50, 5000, function(v) flightSpeed = v / 100 end)
+
+-- =================================================================
+-- SEKME 2: ARAÇ SPAWNER
+-- =================================================================
+local SpawnerPage = Venyx:addPage("Araç Spawner", 8356815386)
+local spawnerSec = SpawnerPage:addSection("Gizli Araçları Bul ve Spawnla")
+
+spawnerSec:addButton("🔍 OYUNDAKİ TÜM ARAÇLARI TARA (F9'a Yazdır)", function()
+    table.clear(FoundVehicles)
+    local count = 0
+    local locations = {ReplicatedStorage, Lighting, workspace}
+    
+    print("====== TUNER V8.8.10 BULUNAN ARAÇLAR (MadeByArman) ======")
+    for _, loc in ipairs(locations) do
+        for _, obj in ipairs(loc:GetDescendants()) do
+            if obj:IsA("Model") and (obj:FindFirstChildWhichIsA("VehicleSeat") or obj:FindFirstChildWhichIsA("Seat")) then
+                if not FoundVehicles[obj.Name] then
+                    FoundVehicles[obj.Name] = obj
+                    count = count + 1
+                    print("["..count.."] İsim: " .. obj.Name)
+                end
+            end
+        end
+    end
+    print("==========================================")
+end)
+
+spawnerSec:addTextbox("Araç İsmi (Tam veya Bir Kısmı)", "", function(v, focusLost)
+    if focusLost then targetSpawnName = v:lower() end
+end)
+
+spawnerSec:addButton("⚡ ARACI YANIMA SPAWN ET ⚡", function()
+    if targetSpawnName == "" then print("Lütfen bir araç ismi yazın!") return end
+    
+    local foundModel = nil
+    local nameLower = targetSpawnName:lower()
+    for name, model in pairs(FoundVehicles) do
+        if name:lower():find(nameLower) then
+            foundModel = model
+            break
+        end
+    end
+    
+    if foundModel then
+        local char = LocalPlayer.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local clonedCar = foundModel:Clone()
+            local spawnCFrame = char.HumanoidRootPart.CFrame * CFrame.new(0, 5, -15)
+            
+            if clonedCar.PrimaryPart then
+                clonedCar:SetPrimaryPartCFrame(spawnCFrame)
+            else
+                local seat = clonedCar:FindFirstChildWhichIsA("VehicleSeat") or clonedCar:FindFirstChildWhichIsA("BasePart")
+                if seat then seat.CFrame = spawnCFrame end
+            end
+            
+            clonedCar.Parent = workspace
+            print("[Spawner] Başarılı! " .. foundModel.Name .. " yanına spawnlandı.")
+        end
+    end
+end)
+
+-- =================================================================
+-- SEKME 3: TRAFİK KONTROLÜ
+-- =================================================================
+local TrafficPage = Venyx:addPage("Trafik & NPC", 8356815386)
+
+local tSec1 = TrafficPage:addSection("Metot 1: Güvenli Yer Altına Gönderme (Önerilen)")
+tSec1:addToggle("👻 Yer Altına Gönder (Anti-Kick)", trafficUnderground, function(v) trafficUnderground = v end)
+
+local tSec2 = TrafficPage:addSection("Metot 2: Çarpışma Kapatıcı")
+tSec2:addToggle("🛡️ NoCollide (İçinden Geç)", trafficNoCollide, function(v) trafficNoCollide = v end)
+
+local tSec3 = TrafficPage:addSection("Metot 3: Agresif İmha")
+tSec3:addToggle("💥 Klasik Silme (Destroy)", trafficDestroy, function(v) trafficDestroy = v end)
+
+table.insert(AllTasks, task.spawn(function()
+    while scriptRunning do
+        task.wait(1)
+        if trafficUnderground then
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") and IsGenericTrafficCar(obj) then
+                    pcall(function()
+                        for _, part in ipairs(obj:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = false
+                                part.Anchored = true
+                            end
+                        end
+                        if obj.PrimaryPart then
+                            obj:SetPrimaryPartCFrame(CFrame.new(0, -5000, 0))
+                        else
+                            local base = obj:FindFirstChildWhichIsA("BasePart")
+                            if base then base.CFrame = CFrame.new(0, -5000, 0) end
+                        end
+                    end)
+                end
+            end
+        end
+    end
+end))
+
+table.insert(AllTasks, task.spawn(function()
+    while scriptRunning do
+        task.wait(0.3)
+        if trafficNoCollide then
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") and IsGenericTrafficCar(obj) then
+                    pcall(function()
+                        for _, part in ipairs(obj:GetDescendants()) do
+                            if part:IsA("BasePart") then
+                                part.CanCollide = false
+                            end
+                        end
+                    end)
+                end
+            end
+        end
+    end
+end))
+
+table.insert(AllTasks, task.spawn(function()
+    while scriptRunning do
+        task.wait(0.5)
+        if trafficDestroy then
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") and IsGenericTrafficCar(obj) then
+                    pcall(function()
+                        obj:Destroy()
+                    end)
+                end
+            end
+        end
+    end
+end))
+
+-- =================================================================
+-- SEKME 4: TOWNCOMBAT (GELİŞTİRİLMİŞ AIM & EXTRAPOLATION)
+-- =================================================================
+local TownCombatPage = Venyx:addPage("TownCombat", 8356815386)
+
+local tcAimSec = TownCombatPage:addSection("Aim Assist & Gelişmiş Hedef Ayarları")
+tcAimSec:addToggle("Aim Assist (Sağ Tık)", tcAimAssistEnabled, function(v) tcAimAssistEnabled = v end)
+tcAimSec:addToggle("🤖 NPC Checker & Target (NPC'lere de Kilitlen)", tcTargetNpcsEnabled, function(v) tcTargetNpcsEnabled = v end)
+tcAimSec:addToggle("⚡ Quick Scope Modu (Anlık Dürbün & Ateş)", tcQuickScopeEnabled, function(v) tcQuickScopeEnabled = v end)
+tcAimSec:addSlider("Aim Yumuşaklık (Smoothness)", 12, 1, 100, function(v) tcAimSmoothness = v / 100 end)
+tcAimSec:addToggle("FOV Çemberini Göster", tcFovCircleEnabled, function(v) tcFovCircleEnabled = v end)
+tcAimSec:addSlider("FOV Çember Boyutu", tcFovRadius, 30, 400, function(v) tcFovRadius = v end)
+tcAimSec:addToggle("WallCheck (Duvar Arkası Engeli)", tcWallCheckEnabled, function(v) tcWallCheckEnabled = v end)
+tcAimSec:addToggle("Team Check (Takım Koruması - Kapalı)", tcTeamCheckEnabled, function(v) tcTeamCheckEnabled = v end)
+
+local tcExtrapSec = TownCombatPage:addSection("🎯 Fully Automated Target Lead & Extrapolation")
+tcExtrapSec:addToggle("Tam Otomatik Extrapolation Aç", tcExtrapolationEnabled, function(v) tcExtrapolationEnabled = v end)
+tcExtrapSec:addToggle("Rastgele Konumlandırılmış Box Görseli", tcRandomBoxEnabled, function(v) tcRandomBoxEnabled = v end)
+tcExtrapSec:addSlider("Random Box Ofset Mesafesi", 8, 1, 30, function(v) tcRandomBoxOffset = v end)
+
+local tcWeaponSec = TownCombatPage:addSection("Silah Modları & Quick Equip")
+tcWeaponSec:addButton("⚡ Quick Equip (Çantadakileri Kuşan)", function()
+    pcall(function()
+        local bp = LocalPlayer:FindFirstChild("Backpack")
+        local char = LocalPlayer.Character
+        if bp and char then
+            for _, tool in ipairs(bp:GetChildren()) do
+                if tool:IsA("Tool") then tool.Parent = char end
+            end
+        end
+    end)
+end)
+tcWeaponSec:addToggle("NoRecoil (Sıfır Tepme)", tcNoRecoilEnabled, function(v) tcNoRecoilEnabled = v end)
+tcWeaponSec:addToggle("NoSpread (Sıfır Dağılma)", tcNoSpreadEnabled, function(v) tcNoSpreadEnabled = v end)
+tcWeaponSec:addToggle("NoAimSway (Nişan Sallanması Yok)", tcNoAimSwayEnabled, function(v) tcNoAimSwayEnabled = v end)
+tcWeaponSec:addToggle("NoScopeSway (Dürbün Sallanması Yok)", tcNoScopeSwayEnabled, function(v) tcNoScopeSwayEnabled = v end)
+tcWeaponSec:addToggle("Infinite Ammo (Sınırsız Mermi)", tcInfiniteAmmoEnabled, function(v) tcInfiniteAmmoEnabled = v end)
+tcWeaponSec:addToggle("FireRate Boost (Hızlı Ateş Etme)", tcFireRateEnabled, function(v) tcFireRateEnabled = v end)
+
+local tcLightSec = TownCombatPage:addSection("Görüş & Harita Optimizasyonu")
+tcLightSec:addToggle("Fullbright (Geceyi Aydınlat)", tcFullBrightEnabled, function(v) tcToggleFullbright(v) end)
+tcLightSec:addToggle("🌱 Çimen & Yaprakları Sil (Boost FPS)", tcRemoveGrassEnabled, function(v)
+    tcRemoveGrassEnabled = v
+    if v then tcRemoveGrassAndLeaves() end
+end)
+
+local tcEspSec = TownCombatPage:addSection("Dynamic Visuals & ESP (Varsayılan: Kapalı)")
+tcEspSec:addToggle("🔴 Oyuncu ESP Aktif", false, function(v) end)
+tcEspSec:addToggle("🟢 Takım ESP Aktif", tcTeamEspEnabled, function(v) tcTeamEspEnabled = v end)
+tcEspSec:addToggle("📦 2D Box ESP", tcEspBoxEnabled, function(v) tcEspBoxEnabled = v end)
+tcEspSec:addToggle("❤️ Can Barı (Health Bar)", tcEspHealthBarEnabled, function(v) tcEspHealthBarEnabled = v end)
+tcEspSec:addToggle("🏷️ İsim ve Mesafe ESP", tcEspNameEnabled, function(v) tcEspNameEnabled = v end)
+tcEspSec:addToggle("🦴 Skeleton (İskelet Çizgileri)", tcSkeletonEspEnabled, function(v) tcSkeletonEspEnabled = v end)
+tcEspSec:addToggle("🟢 HeadDot (Kafa Noktası)", tcHeadDotEspEnabled, function(v) tcHeadDotEspEnabled = v end)
+tcEspSec:addToggle("✨ Chams / Glow (Dynamic Highlight)", tcChamsEnabled, function(v) tcChamsEnabled = v end)
+tcEspSec:addToggle("🤖 NPC ESP & Checker", tcNpcEspEnabled, function(v) tcNpcEspEnabled = v end)
+tcEspSec:addToggle("🎁 Item ESP (Yerdeki / Alınabilir İtemler)", tcItemEspEnabled, function(v) tcItemEspEnabled = v end)
+
+tcEspSec:addColorPicker("Görünür Renk (Açıkta)", tcVisibleColor, function(c) tcVisibleColor = c end)
+tcEspSec:addColorPicker("Gizli Renk (Duvar Arkası)", tcHiddenColor, function(c) tcHiddenColor = c end)
+tcEspSec:addColorPicker("İtem Renkleri", tcItemEspColor, function(c) tcItemEspColor = c end)
+
+local tcConfSec = TownCombatPage:addSection("TownPro Config Yöneticisi")
+tcConfSec:addTextbox("Ayar Dosya İsmi", "DefaultConfig", function(v, focusLost)
+    if focusLost and v ~= "" then tcCfgName = v end
+end)
+tcConfSec:addButton("💾 PROFİLİ KAYDET", function()
+    local cfgData = {
+        aimAssistEnabled = tcAimAssistEnabled,
+        targetNpcsEnabled = tcTargetNpcsEnabled,
+        quickScopeEnabled = tcQuickScopeEnabled,
+        aimSmoothness = tcAimSmoothness,
+        fovRadius = tcFovRadius,
+        fovCircleEnabled = tcFovCircleEnabled,
+        wallCheckEnabled = tcWallCheckEnabled,
+        teamCheckEnabled = tcTeamCheckEnabled,
+        noRecoilEnabled = tcNoRecoilEnabled,
+        noSpreadEnabled = tcNoSpreadEnabled,
+        noAimSwayEnabled = tcNoAimSwayEnabled,
+        noScopeSwayEnabled = tcNoScopeSwayEnabled,
+        infiniteAmmoEnabled = tcInfiniteAmmoEnabled,
+        fireRateEnabled = tcFireRateEnabled,
+        espBoxEnabled = tcEspBoxEnabled,
+        espHealthBarEnabled = tcEspHealthBarEnabled,
+        teamEspEnabled = tcTeamEspEnabled,
+        fullBrightEnabled = tcFullBrightEnabled,
+        removeGrassEnabled = tcRemoveGrassEnabled,
+        extrapolationEnabled = tcExtrapolationEnabled,
+        randomBoxEnabled = tcRandomBoxEnabled,
+        randomBoxOffset = tcRandomBoxOffset
+    }
+    pcall(function()
+        if writefile then
+            writefile(tcConfigFolder .. "/" .. tcCfgName .. ".json", HttpService:JSONEncode(cfgData))
+        end
+    end)
+end)
+tcConfSec:addButton("📂 PROFİLİ YÜKLE", function()
+    pcall(function()
+        if readfile and isfile and isfile(tcConfigFolder .. "/" .. tcCfgName .. ".json") then
+            local decoded = HttpService:JSONDecode(readfile(tcConfigFolder .. "/" .. tcCfgName .. ".json"))
+            if decoded then
+                tcAimAssistEnabled = decoded.aimAssistEnabled or false
+                tcTargetNpcsEnabled = decoded.targetNpcsEnabled or false
+                tcQuickScopeEnabled = decoded.quickScopeEnabled or false
+                tcAimSmoothness = decoded.aimSmoothness or 0.12
+                tcFovRadius = decoded.fovRadius or 120
+                tcFovCircleEnabled = decoded.fovCircleEnabled or false
+                tcWallCheckEnabled = decoded.wallCheckEnabled or true
+                tcTeamCheckEnabled = decoded.teamCheckEnabled or false
+                tcNoRecoilEnabled = decoded.noRecoilEnabled or false
+                tcNoSpreadEnabled = decoded.noSpreadEnabled or false
+                tcNoAimSwayEnabled = decoded.noAimSwayEnabled or false
+                tcNoScopeSwayEnabled = decoded.noScopeSwayEnabled or false
+                tcInfiniteAmmoEnabled = decoded.infiniteAmmoEnabled or false
+                tcFireRateEnabled = decoded.fireRateEnabled or false
+                tcEspBoxEnabled = decoded.espBoxEnabled or false
+                tcEspHealthBarEnabled = decoded.espHealthBarEnabled or false
+                tcTeamEspEnabled = decoded.teamEspEnabled or false
+                tcFullBrightEnabled = decoded.fullBrightEnabled or false
+                tcRemoveGrassEnabled = decoded.removeGrassEnabled or false
+                tcExtrapolationEnabled = decoded.extrapolationEnabled or false
+                tcRandomBoxEnabled = decoded.randomBoxEnabled or false
+                tcRandomBoxOffset = decoded.randomBoxOffset or 8
+                tcToggleFullbright(tcFullBrightEnabled)
+                if tcRemoveGrassEnabled then tcRemoveGrassAndLeaves() end
+            end
+        end
+    end)
+end)
+
+local tcFovDrawing = Drawing.new("Circle")
+tcFovDrawing.Visible = false
+tcFovDrawing.Thickness = 2
+tcFovDrawing.NumSides = 30
+tcFovDrawing.Radius = tcFovRadius
+tcFovDrawing.Filled = false
+tcFovDrawing.Color = Color3.fromRGB(255, 70, 70)
+
+local function tcIsTeamMate(p)
+    if not tcTeamCheckEnabled then return false end
+    if p == LocalPlayer then return true end
+    if LocalPlayer.Team and p.Team then return LocalPlayer.Team == p.Team end
+    return false
+end
+
+-- GELİŞTİRİLMİŞ AIMBOT HEDEF SEÇİMİ (OTOMATİK KEMİK VE EXTRAPOLATION DESTEKLİ)
+local function tcGetClosestTarget()
+    local closestTarget = nil
+    local shortestDist3D = math.huge
+    local mousePos = UserInputService:GetMouseLocation()
+    local localChar = LocalPlayer.Character
+    local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        pcall(function()
+            if p ~= LocalPlayer and not tcIsTeamMate(p) and p.Character then
+                local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                local targetPart = p.Character:FindFirstChild("Head") or p.Character:FindFirstChild("UpperTorso")
+                local root = p.Character:FindFirstChild("HumanoidRootPart")
+                if hum and hum.Health > 0 and targetPart and root then
+                    if not tcWallCheckEnabled or tcIsPartVisible(targetPart, p.Character) then
+                        local targetWorldPos = CalculateExtrapolatedPosition(targetPart)
+                        local screenPos, onScreen = Camera:WorldToViewportPoint(targetWorldPos)
+                        if onScreen then
+                            local screenDist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                            if screenDist < tcFovRadius then
+                                local dist3D = localRoot and (root.Position - localRoot.Position).Magnitude or screenDist
+                                if dist3D < shortestDist3D then
+                                    shortestDist3D = dist3D
+                                    closestTarget = targetWorldPos
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+
+    if tcTargetNpcsEnabled then
+        pcall(function()
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Model") and obj ~= LocalPlayer.Character then
+                    local hum = obj:FindFirstChildOfClass("Humanoid")
+                    local targetPart = obj:FindFirstChild("Head") or obj:FindFirstChild("UpperTorso")
+                    local root = obj:FindFirstChild("HumanoidRootPart") or targetPart
+                    if hum and hum.Health > 0 and targetPart and root then
+                        local isPlayer = false
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p.Character == obj then isPlayer = true break end
+                        end
+                        if not isPlayer then
+                            if not tcWallCheckEnabled or tcIsPartVisible(targetPart, obj) then
+                                local targetWorldPos = CalculateExtrapolatedPosition(targetPart)
+                                local screenPos, onScreen = Camera:WorldToViewportPoint(targetWorldPos)
+                                if onScreen then
+                                    local screenDist = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                                    if screenDist < tcFovRadius then
+                                        local dist3D = localRoot and (root.Position - localRoot.Position).Magnitude or screenDist
+                                        if dist3D < shortestDist3D then
+                                            shortestDist3D = dist3D
+                                            closestTarget = targetWorldPos
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+
+    return closestTarget
+end
+
+-- ESP Cache Yapısı
+local tcPlayerEspCache = {}
+local tcNpcEspCache = {}
+local tcItemEspCache = {}
+
+local skeletonBones = {
+    {"Head", "UpperTorso"},
+    {"UpperTorso", "LowerTorso"},
+    {"UpperTorso", "LeftUpperArm"},
+    {"LeftUpperArm", "LeftLowerArm"},
+    {"LeftLowerArm", "LeftHand"},
+    {"UpperTorso", "RightUpperArm"},
+    {"RightUpperArm", "RightLowerArm"},
+    {"RightLowerArm", "RightHand"},
+    {"LowerTorso", "LeftUpperLeg"},
+    {"LeftUpperLeg", "LeftLowerLeg"},
+    {"LeftLowerLeg", "LeftFoot"},
+    {"LowerTorso", "RightUpperLeg"},
+    {"RightUpperLeg", "RightLowerLeg"},
+    {"RightLowerLeg", "RightFoot"}
+}
+
+local r6Bones = {
+    {"Head", "Torso"},
+    {"Torso", "Left Arm"},
+    {"Torso", "Right Arm"},
+    {"Torso", "Left Leg"},
+    {"Torso", "Right Leg"}
+}
+
+local function createPlayerEsp(p)
+    if tcPlayerEspCache[p] then return tcPlayerEspCache[p] end
+    local cache = {
+        Box = Drawing.new("Square"),
+        HealthBarBg = Drawing.new("Square"),
+        HealthBar = Drawing.new("Square"),
+        Name = Drawing.new("Text"),
+        HeadDot = Drawing.new("Circle"),
+        SkeletonLines = {}
+    }
+    cache.Box.Visible = false; cache.Box.Filled = false; cache.Box.Thickness = 1.5
+    cache.HealthBarBg.Visible = false; cache.HealthBarBg.Filled = true; cache.HealthBarBg.Color = Color3.fromRGB(0,0,0)
+    cache.HealthBar.Visible = false; cache.HealthBar.Filled = true
+    cache.Name.Visible = false; cache.Name.Size = 13; cache.Name.Center = true; cache.Name.Outline = true; cache.Name.Color = Color3.fromRGB(255,255,255)
+    cache.HeadDot.Visible = false; cache.HeadDot.Radius = 3; cache.HeadDot.Filled = true
+    
+    for i = 1, 15 do
+        local line = Drawing.new("Line")
+        line.Visible = false
+        line.Thickness = 1
+        table.insert(cache.SkeletonLines, line)
+    end
+    
+    tcPlayerEspCache[p] = cache
+    return cache
+end
+
+table.insert(AllConnections, Players.PlayerRemoving:Connect(function(p)
+    if tcPlayerEspCache[p] then
+        pcall(function()
+            tcPlayerEspCache[p].Box:Remove()
+            tcPlayerEspCache[p].HealthBarBg:Remove()
+            tcPlayerEspCache[p].HealthBar:Remove()
+            tcPlayerEspCache[p].Name:Remove()
+            tcPlayerEspCache[p].HeadDot:Remove()
+            for _, l in ipairs(tcPlayerEspCache[p].SkeletonLines) do l:Remove() end
+        end)
+        tcPlayerEspCache[p] = nil
+    end
+end))
+
+local CachedNpcs = {}
+local CachedItems = {}
+
+table.insert(AllTasks, task.spawn(function()
+    while scriptRunning do
+        task.wait(1)
+        
+        if tcNpcEspEnabled or tcTargetNpcsEnabled then
+            local newNpcs = {}
+            pcall(function()
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj:IsA("Model") and obj ~= LocalPlayer.Character then
+                        local isPlayer = false
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p.Character == obj then isPlayer = true break end
+                        end
+                        if not isPlayer then
+                            local hum = obj:FindFirstChildOfClass("Humanoid")
+                            local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
+                            if hum and hum.Health > 0 and root then
+                                table.insert(newNpcs, {Model = obj, Root = root, Head = obj:FindFirstChild("Head") or root, Humanoid = hum})
+                            end
+                        end
+                    end
+                end
+            end)
+            CachedNpcs = newNpcs
+        else
+            CachedNpcs = {}
+        end
+
+        if tcItemEspEnabled then
+            local newItems = {}
+            pcall(function()
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    local isItem = false
+                    local targetPart = nil
+                    local itemName = obj.Name
+
+                    if obj:IsA("Tool") then
+                        isItem = true
+                        targetPart = obj:FindFirstChild("Handle") or obj:FindFirstChildWhichIsA("BasePart")
+                    elseif obj:IsA("ProximityPrompt") then
+                        isItem = true
+                        targetPart = obj.Parent
+                        itemName = obj.ObjectText ~= "" and obj.ObjectText or obj.ActionText
+                    elseif obj:IsA("BasePart") and (obj.Name:lower():find("item") or obj.Name:lower():find("loot") or obj.Name:lower():find("weapon") or obj.Name:lower():find("ammo") or obj.Name:lower():find("gun")) then
+                        isItem = true
+                        targetPart = obj
+                    end
+
+                    if isItem and targetPart and targetPart:IsA("BasePart") then
+                        table.insert(newItems, {Part = targetPart, Name = itemName})
+                    end
+                end
+            end)
+            CachedItems = newItems
+        else
+            CachedItems = {}
+        end
+    end
+end))
+
+-- RENDERSTEPPED (GELİŞTİRİLMİŞ KAMERA SMOOTHNESS)
+table.insert(AllConnections, RunService.RenderStepped:Connect(function()
+    if not scriptRunning then return end
+
+    pcall(function()
+        if tcFovCircleEnabled then
+            tcFovDrawing.Visible = true
+            tcFovDrawing.Radius = tcFovRadius
+            tcFovDrawing.Position = UserInputService:GetMouseLocation()
+        else
+            tcFovDrawing.Visible = false
+        end
+    end)
+
+    pcall(function()
+        local isAiming = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
+        if (tcAimAssistEnabled or tcQuickScopeEnabled) and isAiming then
+            local targetWorldPos = tcGetClosestTarget()
+            if targetWorldPos then
+                local currentCF = Camera.CFrame
+                local targetCF = CFrame.lookAt(currentCF.Position, targetWorldPos, Vector3.new(0, 1, 0))
+                -- Daha pürüzsüz ve akıcı bir interpolasyon sağlandı
+                Camera.CFrame = currentCF:Lerp(targetCF, math.clamp(tcAimSmoothness * 1.5, 0.01, 1))
+
+                if tcQuickScopeEnabled then
+                    local char = LocalPlayer.Character
+                    local tool = char and char:FindFirstChildOfClass("Tool")
+                    if tool then tool:Activate() end
+                end
+            end
+        end
+    end)
+
+    for _, p in ipairs(Players:GetPlayers()) do
+        pcall(function()
+            if p ~= LocalPlayer and p.Character then
+                local char = p.Character
+                local head = char:FindFirstChild("Head")
+                local rootPart = char:FindFirstChild("HumanoidRootPart")
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                local cache = createPlayerEsp(p)
+
+                if not char or not rootPart or not head or not hum or hum.Health <= 0 then
+                    cache.Box.Visible = false
+                    cache.HealthBar.Visible = false
+                    cache.HealthBarBg.Visible = false
+                    cache.Name.Visible = false
+                    cache.HeadDot.Visible = false
+                    for _, l in ipairs(cache.SkeletonLines) do l.Visible = false end
+                    local hl = char:FindFirstChild("TcChamsHighlight")
+                    if hl then hl:Destroy() end
+                    return
+                end
+
+                local isTeam = tcIsTeamMate(p)
+                local isVisible = tcIsPartVisible(head, char)
+                local espColor = isTeam and tcTeamEspColor or (isVisible and tcVisibleColor or tcHiddenColor)
+
+                if tcChamsEnabled then
+                    local hl = char:FindFirstChild("TcChamsHighlight")
+                    if not hl then
+                        hl = Instance.new("Highlight")
+                        hl.Name = "TcChamsHighlight"
+                        hl.Adornee = char
+                        hl.FillTransparency = 0.35
+                        hl.OutlineTransparency = 0.1
+                        hl.Parent = char
+                    end
+                    hl.FillColor = espColor
+                else
+                    local hl = char:FindFirstChild("TcChamsHighlight")
+                    if hl then hl:Destroy() end
+                end
+
+                local extrapolatedRootPos = CalculateExtrapolatedPosition(rootPart)
+                local extrapolatedHeadPos = CalculateExtrapolatedPosition(head)
+
+                if tcRandomBoxEnabled then
+                    local seed = p.UserId + math.floor(tick() * 2)
+                    local rng = Random.new(seed)
+                    local randomOffset = Vector3.new(rng:NextNumber(-tcRandomBoxOffset, tcRandomBoxOffset), rng:NextNumber(-tcRandomBoxOffset/2, tcRandomBoxOffset/2), rng:NextNumber(-tcRandomBoxOffset, tcRandomBoxOffset))
+                    extrapolatedRootPos = extrapolatedRootPos + randomOffset
+                    extrapolatedHeadPos = extrapolatedHeadPos + randomOffset
+                end
+
+                local rootPos, onScreen = Camera:WorldToViewportPoint(extrapolatedRootPos)
+                if onScreen then
+                    local headPos = Camera:WorldToViewportPoint(extrapolatedHeadPos + Vector3.new(0, 0.5, 0))
+                    local legPos = Camera:WorldToViewportPoint(extrapolatedRootPos - Vector3.new(0, 3, 0))
+                    local height = math.clamp(math.abs(headPos.Y - legPos.Y), 10, 600)
+                    local width = height / 2
+
+                    if tcEspBoxEnabled then
+                        cache.Box.Visible = true
+                        cache.Box.Size = Vector2.new(width, height)
+                        cache.Box.Position = Vector2.new(rootPos.X - width / 2, headPos.Y)
+                        cache.Box.Color = espColor
+                    else
+                        cache.Box.Visible = false
+                    end
+
+                    if tcEspHealthBarEnabled then
+                        local hpPct = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+                        local barH = height * hpPct
+                        cache.HealthBarBg.Visible = true
+                        cache.HealthBarBg.Size = Vector2.new(3, height)
+                        cache.HealthBarBg.Position = Vector2.new(rootPos.X - width / 2 - 6, headPos.Y)
+
+                        cache.HealthBar.Visible = true
+                        cache.HealthBar.Size = Vector2.new(1, barH)
+                        cache.HealthBar.Position = Vector2.new(rootPos.X - width / 2 - 5, headPos.Y + (height - barH))
+                        cache.HealthBar.Color = Color3.fromRGB(255 - (hpPct * 255), hpPct * 255, 0)
+                    else
+                        cache.HealthBar.Visible = false
+                        cache.HealthBarBg.Visible = false
+                    end
+
+                    if tcEspNameEnabled then
+                        cache.Name.Visible = true
+                        local dist = math.floor((rootPart.Position - Camera.CFrame.Position).Magnitude)
+                        cache.Name.Text = p.Name .. " [" .. math.floor(hum.Health) .. "HP] (" .. dist .. "m)"
+                        cache.Name.Position = Vector2.new(rootPos.X, headPos.Y - 16)
+                        cache.Name.Color = espColor
+                    else
+                        cache.Name.Visible = false
+                    end
+
+                    if tcHeadDotEspEnabled then
+                        local headScreen, headVis = Camera:WorldToViewportPoint(extrapolatedHeadPos)
+                        if headVis then
+                            cache.HeadDot.Visible = true
+                            cache.HeadDot.Position = Vector2.new(headScreen.X, headScreen.Y)
+                            cache.HeadDot.Color = espColor
+                        else
+                            cache.HeadDot.Visible = false
+                        end
+                    else
+                        cache.HeadDot.Visible = false
+                    end
+
+                    if tcSkeletonEspEnabled then
+                        local bonesToUse = char:FindFirstChild("UpperTorso") and skeletonBones or r6Bones
+                        for i, bone in ipairs(bonesToUse) do
+                            local part1 = char:FindFirstChild(bone[1])
+                            local part2 = char:FindFirstChild(bone[2])
+                            local line = cache.SkeletonLines[i]
+                            
+                            if part1 and part2 and line then
+                                local p1Ext = CalculateExtrapolatedPosition(part1)
+                                local p2Ext = CalculateExtrapolatedPosition(part2)
+                                local p1Screen, vis1 = Camera:WorldToViewportPoint(p1Ext)
+                                local p2Screen, vis2 = Camera:WorldToViewportPoint(p2Ext)
+                                if vis1 or vis2 then
+                                    line.Visible = true
+                                    line.From = Vector2.new(p1Screen.X, p1Screen.Y)
+                                    line.To = Vector2.new(p2Screen.X, p2Screen.Y)
+                                    line.Color = espColor
+                                else
+                                    line.Visible = false
+                                end
+                            else
+                                if line then line.Visible = false end
+                            end
+                        end
+                    else
+                        for _, l in ipairs(cache.SkeletonLines) do l.Visible = false end
+                    end
+                else
+                    cache.Box.Visible = false
+                    cache.HealthBar.Visible = false
+                    cache.HealthBarBg.Visible = false
+                    cache.Name.Visible = false
+                    cache.HeadDot.Visible = false
+                    for _, l in ipairs(cache.SkeletonLines) do l.Visible = false end
+                end
+            end
+        end)
+    end
+
+    if tcNpcEspEnabled then
+        for i, data in ipairs(CachedNpcs) do
+            pcall(function()
+                local obj = data.Model
+                local root = data.Root
+                local head = data.Head
+                
+                if obj and root and data.Humanoid and data.Humanoid.Health > 0 then
+                    local isVisible = tcIsPartVisible(head, obj)
+                    local npcColor = isVisible and tcVisibleColor or tcHiddenColor
+
+                    if tcChamsEnabled then
+                        local hl = obj:FindFirstChild("TcNpcChamsHighlight")
+                        if not hl then
+                            hl = Instance.new("Highlight")
+                            hl.Name = "TcNpcChamsHighlight"
+                            hl.Adornee = obj
+                            hl.FillTransparency = 0.35
+                            hl.OutlineTransparency = 0.1
+                            hl.Parent = obj
+                        end
+                        hl.FillColor = npcColor
+                    else
+                        local hl = obj:FindFirstChild("TcNpcChamsHighlight")
+                        if hl then hl:Destroy() end
+                    end
+
+                    if not tcNpcEspCache[obj] then
+                        tcNpcEspCache[obj] = { Box = Drawing.new("Square"), Name = Drawing.new("Text") }
+                        tcNpcEspCache[obj].Box.Filled = false; tcNpcEspCache[obj].Box.Thickness = 1
+                        tcNpcEspCache[obj].Name.Size = 12; tcNpcEspCache[obj].Name.Center = true; tcNpcEspCache[obj].Name.Outline = true
+                    end
+                    local cache = tcNpcEspCache[obj]
+
+                    local extRoot = CalculateExtrapolatedPosition(root)
+                    local extHead = CalculateExtrapolatedPosition(head)
+
+                    local pos, onScreen = Camera:WorldToViewportPoint(extRoot)
+                    if onScreen then
+                        local headPos = Camera:WorldToViewportPoint(extHead + Vector3.new(0, 0.5, 0))
+                        local legPos = Camera:WorldToViewportPoint(extRoot - Vector3.new(0, 3, 0))
+                        local height = math.clamp(math.abs(headPos.Y - legPos.Y), 10, 600)
+                        local width = height / 2
+
+                        cache.Box.Visible = true; cache.Box.Size = Vector2.new(width, height); cache.Box.Position = Vector2.new(pos.X - width/2, headPos.Y); cache.Box.Color = npcColor
+                        cache.Name.Visible = true; cache.Name.Text = "[NPC] " .. obj.Name; cache.Name.Position = Vector2.new(pos.X, headPos.Y - 15); cache.Name.Color = npcColor
+                    else
+                        cache.Box.Visible = false; cache.Name.Visible = false
+                    end
+                else
+                    if tcNpcEspCache[obj] then
+                        tcNpcEspCache[obj].Box.Visible = false
+                        tcNpcEspCache[obj].Name.Visible = false
+                    end
+                    local hl = obj:FindFirstChild("TcNpcChamsHighlight")
+                    if hl then hl:Destroy() end
+                end
+            end)
+        end
+    end
+
+    if tcItemEspEnabled then
+        for i, data in ipairs(CachedItems) do
+            pcall(function()
+                local targetPart = data.Part
+                local itemName = data.Name
+                if not tcItemEspCache[targetPart] then
+                    tcItemEspCache[targetPart] = Drawing.new("Text")
+                    tcItemEspCache[targetPart].Size = 12; tcItemEspCache[targetPart].Center = true; tcItemEspCache[targetPart].Outline = true; tcItemEspCache[targetPart].Color = tcItemEspColor
+                end
+                local textObj = tcItemEspCache[targetPart]
+                local pos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+                if onScreen then
+                    local dist = math.floor((targetPart.Position - Camera.CFrame.Position).Magnitude)
+                    textObj.Visible = true
+                    textObj.Text = "[🎁 " .. itemName .. "] (" .. dist .. "m)"
+                    textObj.Position = Vector2.new(pos.X, pos.Y)
+                else
+                    textObj.Visible = false
+                end
+            end)
+        end
+    end
+
+    for i = #activePenetrationDots, 1, -1 do
+        local data = activePenetrationDots[i]
+        if tick() - data.Time > 4 then
+            data.Dot:Remove()
+            table.remove(activePenetrationDots, i)
+        else
+            local pos, onScreen = Camera:WorldToViewportPoint(data.Position)
+            if onScreen then
+                data.Dot.Visible = true
+                data.Dot.Position = Vector2.new(pos.X, pos.Y)
+            else
+                data.Dot.Visible = false
+            end
+        end
+    end
+end))
+
+-- =================================================================
+-- SEKME 5: COMBAT & FPS
+-- =================================================================
+local CombatPage = Venyx:addPage("Combat & FPS", 8356815386)
+
+local cHvHSec = CombatPage:addSection("🔥 CS HvH Rage Bot & 360° FOV (Akıllı Görüş Açısı)")
+cHvHSec:addToggle("⚡ Rage Bot (Anlık Snap & Otomatik Kilit)", false, function(v) end)
+cHvHSec:addToggle("🔄 360° FOV (Çevresel Tarama & En Yakın)", false, function(v) end)
+
+local cAimSec = CombatPage:addSection("Aim Assist & Jitter / Hız Kontrolleri")
+cAimSec:addToggle("🎯 Aim Assist (Yumuşak Hedef Takibi)", false, function(v) end)
+cAimSec:addToggle("🤫 Silent Aim (Güvenli Mikro-Snap Yönlendirme)", false, function(v) end)
+
+-- =================================================================
+-- SEKME 6: DENEYSEL
+-- =================================================================
+local ExperimentalPage = Venyx:addPage("Deneysel", 8356815386)
+local expSec = ExperimentalPage:addSection("DummyRain Path Yöneticisi")
+
+expSec:addButton("📍 DummyRain Dummylerini Yanıma Getir", function()
+    pcall(function()
+        local dummyRain = workspace:FindFirstChild("DummyRain")
+        local char = LocalPlayer.Character
+        if dummyRain and char and char:FindFirstChild("HumanoidRootPart") then
+            for _, obj in ipairs(dummyRain:GetDescendants()) do
+                if obj:IsA("Model") and obj:FindFirstChild("HumanoidRootPart") then
+                    obj:SetPrimaryPartCFrame(char.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5))
+                elseif obj:IsA("BasePart") then
+                    obj.CFrame = char.HumanoidRootPart.CFrame * CFrame.new(0, 0, -5)
+                end
+            end
+            print("[Deneysel] workspace.DummyRain öğeleri yanına getirildi!")
+        else
+            print("[Deneysel] HATA: workspace.DummyRain bulunamadı!")
+        end
+    end)
+end)
+
+-- =================================================================
+-- SEKME 7: CONFIG & HUB
+-- =================================================================
+local ConfigPage = Venyx:addPage("Config & Hub", 8356815386)
+local confSec = ConfigPage:addSection("Profil Yöneticisi")
+
+local ConfigFolder = "UniversalTunerConfigs"
+pcall(function() if isfolder and not isfolder(ConfigFolder) then makefolder(ConfigFolder) end end)
+
+local cfgName = "YeniAyar"
+confSec:addTextbox("Ayar İsmi Yazın", "YeniAyar", function(v, focusLost) if focusLost then cfgName = v end end)
+confSec:addButton("💾 PROFİLİ KAYDET 💾", function()
+    local data = {accelPower = accelPower, topSpeed = topSpeed, handlingBoost = handlingBoost, gripMult = gripMult, downforceMult = downforceMult, brakePower = brakePower, flightSpeed = flightSpeed}
+    pcall(function() if writefile then writefile(ConfigFolder .. "/" .. cfgName .. ".json", HttpService:JSONEncode(data)) end end)
+end)
+confSec:addButton("📂 PROFİLİ YÜKLE 📂", function()
+    pcall(function()
+        if readfile then
+            local dec = HttpService:JSONDecode(readfile(ConfigFolder .. "/" .. cfgName .. ".json"))
+            accelPower = dec.accelPower or accelPower; topSpeed = dec.topSpeed or topSpeed; handlingBoost = dec.handlingBoost or handlingBoost
+            gripMult = dec.gripMult or gripMult; downforceMult = dec.downforceMult or downforceMult; brakePower = dec.brakePower or brakePower; flightSpeed = dec.flightSpeed or flightSpeed
+        end
+    end)
+end)
+
+-- =================================================================
+-- SEKME 8: TEMA & KAPAT
+-- =================================================================
+local SettingsPage = Venyx:addPage("Tema & Kapat", 8356815386)
+local themeSec = SettingsPage:addSection("Manuel UI Tema Özelleştirme")
+for prop, color in pairs(CurrentTheme) do themeSec:addColorPicker(prop .. " Rengi", color, function(newColor) CurrentTheme[prop] = newColor; pcall(function() Venyx:setTheme(prop, newColor) end) end) end
+
+local sysSec = SettingsPage:addSection("Sistem Kontrolü")
+sysSec:addKeybind("Menüyü Gizle/Göster Tuşu", menuToggleKey, function() end, function(v) menuToggleKey = v.KeyCode end)
+
+local keybindConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == menuToggleKey then
+        pcall(function() Venyx:toggle() end)
+    end
+end)
+table.insert(AllConnections, keybindConn)
+
+sysSec:addButton("❌ SCRIPTİ TAMAMEN SİL VE KAPAT ❌", function()
+    scriptRunning = false
+    velocityEnabled = false
+    flightEnabled = false
+    ghostModeEnabled = false
+    carJumpEnabled = false
+    trafficUnderground = false
+    trafficNoCollide = false
+    trafficDestroy = false
+
+    pcall(function()
+        if defaultCharacterParent and LocalPlayer.Character then
+            LocalPlayer.Character.Parent = defaultCharacterParent
+        end
+    end)
+
+    for _, conn in ipairs(AllConnections) do pcall(function() conn:Disconnect() end) end
+    table.clear(AllConnections)
+
+    for _, t in ipairs(AllTasks) do pcall(function() task.cancel(t) end) end
+    table.clear(AllTasks)
+
+    if tcFovDrawing then pcall(function() tcFovDrawing:Remove() end) end
+    pcall(function() hmLine1:Remove() hmLine2:Remove() hmLine3:Remove() hmLine4:Remove() end)
+    for _, dotData in ipairs(activePenetrationDots) do pcall(function() dotData.Dot:Remove() end) end
+
+    for _, cache in pairs(tcPlayerEspCache) do
+        pcall(function()
+            cache.Box:Remove()
+            cache.HealthBarBg:Remove()
+            cache.HealthBar:Remove()
+            cache.Name:Remove()
+            cache.HeadDot:Remove()
+            for _, l in ipairs(cache.SkeletonLines) do l:Remove() end
+        end)
+    end
+    table.clear(tcPlayerEspCache)
+
+    for _, cache in pairs(tcNpcEspCache) do
+        pcall(function() cache.Box:Remove(); cache.Name:Remove() end)
+    end
+    table.clear(tcNpcEspCache)
+
+    for _, textObj in pairs(tcItemEspCache) do
+        pcall(function() textObj:Remove() end)
+    end
+    table.clear(tcItemEspCache)
+
+    pcall(function() Venyx:destroy() end)
+
+    pcall(function()
+        local searchLocs = {CoreGui, LocalPlayer:FindFirstChildOfClass("PlayerGui")}
+        local gethui_func = gethui
+        if gethui_func then table.insert(searchLocs, gethui_func()) end
+        for _, loc in ipairs(searchLocs) do
+            if loc then
+                for _, child in ipairs(loc:GetChildren()) do
+                    if child.Name:lower():find("venyx") or child.Name:lower():find("tuner") or child.Name:lower():find("town") then
+                        child:Destroy()
+                    end
+                end
+            end
+        end
+    end)
+
+    print("[Tuner & Combat2 | MadeByArman] Script tamamen temizlendi ve kapatıldı!")
+end)
+
+-- =================================================================
+-- SEKME 9: MADEBYARMAN (CREDITS)
+-- =================================================================
+local CreditPage = Venyx:addPage("MadeByArman", 8356815386)
+local creditSec = CreditPage:addSection("Geliştirici Bilgileri")
+creditSec:addButton("MadeByArman Tarafından Geliştirilmiştir", function() end)
+
+table.insert(AllConnections, UserInputService.JumpRequest:Connect(function()
+    if scriptRunning and velocityEnabled and carJumpEnabled then
+        pcall(function()
+            local seat = GetVehicleSeat()
+            if seat then seat:ApplyImpulse(Vector3.new(0, seat.AssemblyMass * jumpPower, 0)) end
+        end)
+    end
+end))
+
+table.insert(AllConnections, RunService.Heartbeat:Connect(function(deltaTime)
+    pcall(function()
+        local mySeat = GetVehicleSeat()
+        local myVehicle = mySeat and mySeat:FindFirstAncestorWhichIsA("Model")
+        
+        if flightEnabled and myVehicle then
+            local char = LocalPlayer.Character
+            if not defaultCharacterParent and char.Parent then defaultCharacterParent = char.Parent end
+            if scriptRunning then char.Parent = myVehicle end
+        end
+
+        if not scriptRunning then return end
+        if not velocityEnabled or not mySeat then return end
+        
+        if myVehicle and ghostModeEnabled then
+            for _, part in ipairs(myVehicle:GetDescendants()) do if part:IsA("BasePart") then part.CanCollide = false end end
+        end
+
+        if flightEnabled and myVehicle then
+            if not myVehicle.PrimaryPart then myVehicle.PrimaryPart = (mySeat.Parent == myVehicle) and mySeat or myVehicle:FindFirstChildWhichIsA("BasePart") end
+            local camLook = workspace.CurrentCamera.CFrame.LookVector
+            local moveX = (UserInputService:IsKeyDown(Enum.KeyCode.D) and flightSpeed) or (UserInputService:IsKeyDown(Enum.KeyCode.A) and -flightSpeed) or 0
+            local moveY = (UserInputService:IsKeyDown(Enum.KeyCode.E) and flightSpeed/2) or (UserInputService:IsKeyDown(Enum.KeyCode.Q) and -flightSpeed/2) or 0
+            local moveZ = (UserInputService:IsKeyDown(Enum.KeyCode.S) and flightSpeed) or (UserInputService:IsKeyDown(Enum.KeyCode.W) and -flightSpeed) or 0
+            local moveFrame = UserInputService:GetFocusedTextBox() and CFrame.new(0,0,0) or CFrame.new(moveX, moveY, moveZ)
+            myVehicle:SetPrimaryPartCFrame(CFrame.new(myVehicle:GetPrimaryPartCFrame().Position, myVehicle:GetPrimaryPartCFrame().Position + camLook) * moveFrame)
+            mySeat.AssemblyLinearVelocity = Vector3.new(0,0,0); mySeat.AssemblyAngularVelocity = Vector3.new(0,0,0)
+            return
+        end
+
+        if defaultCharacterParent and LocalPlayer.Character then LocalPlayer.Character.Parent = defaultCharacterParent end
+        local currentVel = mySeat.AssemblyLinearVelocity
+        local forwardDir = mySeat.CFrame.LookVector
+        local speedInForwardDir = currentVel:Dot(forwardDir)
+
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) and not UserInputService:GetFocusedTextBox() then
+            if speedInForwardDir < topSpeed then mySeat.AssemblyLinearVelocity = currentVel + (forwardDir * (accelPower * deltaTime)) end
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) and not UserInputService:GetFocusedTextBox() then
+            local localVal = mySeat.CFrame:VectorToObjectSpace(currentVel)
+            localVal = Vector3.new(localVal.X * (1 - brakePower), localVal.Y, localVal.Z * (1 - brakePower))
+            mySeat.AssemblyLinearVelocity = mySeat.CFrame:VectorToWorldSpace(localVal)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.P) and not UserInputService:GetFocusedTextBox() then
+            mySeat.AssemblyLinearVelocity = Vector3.new(0,0,0); mySeat.AssemblyAngularVelocity = Vector3.new(0,0,0)
+        end
+    end)
+end))
+
+print("[Tuner & Combat2 | MadeByArman] Gelişmiş aim ve öngörü sistemi başarıyla entegre edildi!")
