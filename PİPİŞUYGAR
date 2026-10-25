@@ -1,12 +1,9 @@
 -- =================================================================
 -- PURE UNIVERSAL VEHICLE TUNER V8.8.10 + TOWNCOMBAT & COMBAT2
--- DEVELOPED BY: MadeByArman
+-- DEVELOPED BY: MadeByArman31
 -- =================================================================
 
-print("[Tuner & Combat2 | MadeByArman] Gelişmiş Aim ve Extrapolation Sistemi Yükleniyor...")
-print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK UYGARIN GÖT DELİĞİ BÜM BÜYÜK UYGARIN GÖT DELİĞİ BÜM BÜYÜK UYGARIN GÖT DELİĞİ BÜM BÜYÜK UYGARIN GÖT DELİĞİ BÜM BÜYÜK UYGARIN GÖT DELİĞİ BÜM BÜYÜK UYGARIN GÖT DELİĞİ BÜM BÜYÜK UYGARIN GÖT DELİĞİ BÜM BÜYÜK UYGARIN GÖT DELİĞİ BÜM BÜYÜK UYGARIN GÖT DELİĞİ BÜM BÜYÜK ")
-
-
+print("[Tuner & Combat2 | MadeByArman31] Gelişmiş Sistemler & ServerHopper Yükleniyor...")
 
 local successLib, VenyxLibrary = pcall(function()
     return loadstring(game:HttpGet("https://raw.githubusercontent.com/Armichan69/UniversalCarTuner/refs/heads/main/universalcarchanger"))()
@@ -17,16 +14,16 @@ if not successLib or not VenyxLibrary then
     return
 end
 
-local Venyx = VenyxLibrary.new("Tuner V8.8.10 | MadeByArman PRO + TownCombat", 5013109572)
+local Venyx = VenyxLibrary.new("Tuner V8.8.10 | MadeByArman31 PRO + TownCombat", 5013109572)
 
--- NEON MOR PREMIUM TEMA
+-- NEON MOR & CYBERPUNK PREMIUM TEMA (GÜZELLEŞTİRİLMİŞ)
 local CurrentTheme = {
-    Background = Color3.fromRGB(20, 15, 28), 
-    Glow = Color3.fromRGB(150, 40, 255), 
-    Accent = Color3.fromRGB(35, 25, 45), 
-    LightContrast = Color3.fromRGB(45, 35, 60), 
-    DarkContrast = Color3.fromRGB(15, 10, 20),  
-    TextColor = Color3.fromRGB(240, 240, 240)
+    Background = Color3.fromRGB(15, 12, 22), 
+    Glow = Color3.fromRGB(170, 50, 255), 
+    Accent = Color3.fromRGB(40, 28, 55), 
+    LightContrast = Color3.fromRGB(55, 40, 75), 
+    DarkContrast = Color3.fromRGB(10, 8, 15),  
+    TextColor = Color3.fromRGB(250, 250, 255)
 }
 for prop, color in pairs(CurrentTheme) do pcall(function() Venyx:setTheme(prop, color) end) end
 
@@ -38,6 +35,8 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
 local CoreGui = game:GetService("CoreGui")
+local TeleportService = game:GetService("TeleportService")
+
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
@@ -70,31 +69,36 @@ local FoundVehicles = {}
 local targetSpawnName = ""
 
 -- =================================================================
--- COMBAT & NPC KONTROL DEĞİŞKENLERİ (GELİŞTİRİLMİŞ)
+-- COMBAT & NPC KONTROL DEĞİŞKENLERİ
 -- =================================================================
 local tcAimAssistEnabled = false
 local tcQuickScopeEnabled = false
-local tcAimSmoothness = 0.12 -- Daha akıcı olması için optimize edildi
+local tcAimSmoothness = 0.12 
 local tcFovRadius = 120
 local tcFovCircleEnabled = false
 local tcWallCheckEnabled = true
 local tcTeamCheckEnabled = false
 local tcTargetNpcsEnabled = false
-local tcAimPartOption = "Head" -- Geliştirilmiş: Head veya Torso seçimi
+local tcAimPartOption = "Head" 
 
 -- TAM OTOMATİK EXTRAPOLATION & RASTGELE BOX AYARLARI
 local tcExtrapolationEnabled = false
 local tcRandomBoxEnabled = false
 local tcRandomBoxOffset = 8
 
+-- GELİŞTİRİLMİŞ SILAH MODİFİKASYONLARI (TOWNCOMBAT)
 local tcNoRecoilEnabled = false
 local tcNoSpreadEnabled = false
 local tcNoAimSwayEnabled = false
 local tcNoScopeSwayEnabled = false
 local tcInfiniteAmmoEnabled = false
 local tcFireRateEnabled = false
+local tcInstantReloadEnabled = false
+local tcAlwaysHeadshotEnabled = false
+local tcFullAutoEnabled = false
+local tcBulletRangeBoostEnabled = false
 
--- GÖRSEL (VISUALS) AYARLARI (VARSAYILAN KAPALI)
+-- GÖRSEL (VISUALS) AYARLARI
 local tcEspBoxEnabled = false
 local tcEspHealthBarEnabled = false
 local tcTeamEspEnabled = false
@@ -182,7 +186,7 @@ local function tcIsPartVisible(part, model)
 end
 
 -- =================================================================
--- GELİŞTİRİLMİŞ BULLET SPEED & EXTRAPOLATION HESAPLAMA SİSTEMİ
+-- BULLET SPEED & EXTRAPOLATION HESAPLAMA SİSTEMİ
 -- =================================================================
 local function GetAutoBulletSpeed()
     local char = LocalPlayer.Character
@@ -201,7 +205,7 @@ local function GetAutoBulletSpeed()
             if type(val) == "number" and val > 10 then return val end
         end
     end
-    return 3500 -- Optimize edilmiş varsayılan mermi hızı
+    return 3500 
 end
 
 local function CalculateExtrapolatedPosition(targetPart)
@@ -223,7 +227,6 @@ local function CalculateExtrapolatedPosition(targetPart)
     local distance = (targetPosition - Camera.CFrame.Position).Magnitude
     local timeToHit = distance / math.max(autoBulletSpeed, 1)
 
-    -- Geliştirilmiş lineer öngörü ve yerçekimi kompanzasyonu
     local predictedPos = targetPosition + ((targetVel - myVel) * timeToHit) + Vector3.new(0, math.min(distance * 0.0015, 3), 0)
     return predictedPos
 end
@@ -302,7 +305,7 @@ local function IsGenericTrafficCar(model)
 end
 
 -- =================================================================
--- COMBAT2 DEĞİŞKENLERİ (HITMARKER & BULLET PENETRATION)
+-- COMBAT2 DEĞİŞKENLERİ (HITMARKER, BULLET PENETRATION & HITBOX)
 -- =================================================================
 local c2AltNoRecoil = false
 local c2AltInfiniteAmmo = false
@@ -310,6 +313,8 @@ local c2AltRapidFire = false
 local c2HitboxExpander = false
 local c2HitboxSize = 5
 local c2HitboxTransparency = 70
+local c2HitboxTeamCheck = true
+local c2HitboxDeadCheck = true
 
 local c2SilentAim = false
 local c2MagicBullet = false
@@ -334,7 +339,9 @@ c2Sec2:addToggle("Auto Fire / TriggerBot (Otomatik Ateş)", c2TriggerBot, functi
 
 local c2Sec3 = Combat2Page:addSection("Hitbox Genişletici (Player & NPC Uyumlu)")
 c2Sec3:addToggle("Hitbox Genişleticiyi Aç", c2HitboxExpander, function(v) c2HitboxExpander = v end)
-c2Sec3:addSlider("Hitbox Boyutu", 5, 2, 25, function(v) c2HitboxSize = v end)
+c2Sec3:addToggle("Hitbox TeamCheck (Takım Arkadaşlarımı Pas Geç)", c2HitboxTeamCheck, function(v) c2HitboxTeamCheck = v end)
+c2Sec3:addToggle("Hitbox DeadCheck (Ölü Oyuncuları Pas Geç)", c2HitboxDeadCheck, function(v) c2HitboxDeadCheck = v end)
+c2Sec3:addSlider("Hitbox Boyutu", 5, 2, 250, function(v) c2HitboxSize = v end)
 c2Sec3:addSlider("Hitbox Saydamlığı", 70, 0, 100, function(v) c2HitboxTransparency = v end)
 
 local c2Sec4 = Combat2Page:addSection("Hitmarker & Mermi Delme Göstergesi")
@@ -351,6 +358,16 @@ for _, l in ipairs({hmLine1, hmLine2, hmLine3, hmLine4}) do
     l.Thickness = 2
     l.Color = Color3.fromRGB(255, 255, 255)
 end
+
+-- WATERMARK DRAWING (MadeByArman31)
+local watermarkText = Drawing.new("Text")
+watermarkText.Visible = true
+watermarkText.Text = "MadeByArman31 | Pro Tuner & Combat V8.8.10"
+watermarkText.Size = 14
+watermarkText.Position = Vector2.new(15, 15)
+watermarkText.Color = Color3.fromRGB(170, 50, 255)
+watermarkText.Outline = true
+watermarkText.Center = false
 
 local function triggerHitmarker()
     if not c2HitmarkerEnabled then return end
@@ -442,14 +459,24 @@ table.insert(AllTasks, task.spawn(function()
                 end
             end
 
+            -- HITBOX GENİŞLETİCİ (TEAMCHECK & DEADCHECK DESTEKLİ)
             if c2HitboxExpander then
                 for _, p in ipairs(Players:GetPlayers()) do
                     if p ~= LocalPlayer and p.Character then
+                        local hum = p.Character:FindFirstChildOfClass("Humanoid")
+                        local isTeam = c2HitboxTeamCheck and LocalPlayer.Team and p.Team and (LocalPlayer.Team == p.Team)
+                        local isDead = c2HitboxDeadCheck and (not hum or hum.Health <= 0)
+                        
                         local root = p.Character:FindFirstChild("HumanoidRootPart")
                         if root then
-                            root.Size = Vector3.new(c2HitboxSize, c2HitboxSize, c2HitboxSize)
-                            root.Transparency = c2HitboxTransparency / 100
-                            root.CanCollide = false
+                            if isTeam or isDead then
+                                root.Size = Vector3.new(2, 2, 1)
+                                root.Transparency = 1
+                            else
+                                root.Size = Vector3.new(c2HitboxSize, c2HitboxSize, c2HitboxSize)
+                                root.Transparency = c2HitboxTransparency / 100
+                                root.CanCollide = false
+                            end
                         end
                     end
                 end
@@ -459,15 +486,21 @@ table.insert(AllTasks, task.spawn(function()
                         if obj:IsA("Model") and obj ~= LocalPlayer.Character then
                             local hum = obj:FindFirstChildOfClass("Humanoid")
                             local root = obj:FindFirstChild("HumanoidRootPart")
-                            if hum and hum.Health > 0 and root then
+                            if root then
                                 local isPlayer = false
                                 for _, p in ipairs(Players:GetPlayers()) do
                                     if p.Character == obj then isPlayer = true break end
                                 end
                                 if not isPlayer then
-                                    root.Size = Vector3.new(c2HitboxSize, c2HitboxSize, c2HitboxSize)
-                                    root.Transparency = c2HitboxTransparency / 100
-                                    root.CanCollide = false
+                                    local isDead = c2HitboxDeadCheck and (not hum or hum.Health <= 0)
+                                    if isDead then
+                                        root.Size = Vector3.new(2, 2, 1)
+                                        root.Transparency = 1
+                                    else
+                                        root.Size = Vector3.new(c2HitboxSize, c2HitboxSize, c2HitboxSize)
+                                        root.Transparency = c2HitboxTransparency / 100
+                                        root.CanCollide = false
+                                    end
                                 end
                             end
                         end
@@ -531,7 +564,7 @@ spawnerSec:addButton("🔍 OYUNDAKİ TÜM ARAÇLARI TARA (F9'a Yazdır)", functi
     local count = 0
     local locations = {ReplicatedStorage, Lighting, workspace}
     
-    print("====== TUNER V8.8.10 BULUNAN ARAÇLAR (MadeByArman) ======")
+    print("====== TUNER V8.8.10 BULUNAN ARAÇLAR (MadeByArman31) ======")
     for _, loc in ipairs(locations) do
         for _, obj in ipairs(loc:GetDescendants()) do
             if obj:IsA("Model") and (obj:FindFirstChildWhichIsA("VehicleSeat") or obj:FindFirstChildWhichIsA("Seat")) then
@@ -656,7 +689,7 @@ table.insert(AllTasks, task.spawn(function()
 end))
 
 -- =================================================================
--- SEKME 4: TOWNCOMBAT (GELİŞTİRİLMİŞ AIM & EXTRAPOLATION)
+-- SEKME 4: TOWNCOMBAT (GELİŞTİRİLMİŞ SİLAH MODİFİKASYONLARI)
 -- =================================================================
 local TownCombatPage = Venyx:addPage("TownCombat", 8356815386)
 
@@ -675,7 +708,7 @@ tcExtrapSec:addToggle("Tam Otomatik Extrapolation Aç", tcExtrapolationEnabled, 
 tcExtrapSec:addToggle("Rastgele Konumlandırılmış Box Görseli", tcRandomBoxEnabled, function(v) tcRandomBoxEnabled = v end)
 tcExtrapSec:addSlider("Random Box Ofset Mesafesi", 8, 1, 30, function(v) tcRandomBoxOffset = v end)
 
-local tcWeaponSec = TownCombatPage:addSection("Silah Modları & Quick Equip")
+local tcWeaponSec = TownCombatPage:addSection("Gelişmiş Silah Modifikasyonları & Modlar")
 tcWeaponSec:addButton("⚡ Quick Equip (Çantadakileri Kuşan)", function()
     pcall(function()
         local bp = LocalPlayer:FindFirstChild("Backpack")
@@ -687,12 +720,88 @@ tcWeaponSec:addButton("⚡ Quick Equip (Çantadakileri Kuşan)", function()
         end
     end)
 end)
-tcWeaponSec:addToggle("NoRecoil (Sıfır Tepme)", tcNoRecoilEnabled, function(v) tcNoRecoilEnabled = v end)
-tcWeaponSec:addToggle("NoSpread (Sıfır Dağılma)", tcNoSpreadEnabled, function(v) tcNoSpreadEnabled = v end)
+tcWeaponSec:addToggle("NoRecoil (Sıfır Tepme & Tepme Kilidi)", tcNoRecoilEnabled, function(v) tcNoRecoilEnabled = v end)
+tcWeaponSec:addToggle("NoSpread (Sıfır Mermi Dağılması)", tcNoSpreadEnabled, function(v) tcNoSpreadEnabled = v end)
 tcWeaponSec:addToggle("NoAimSway (Nişan Sallanması Yok)", tcNoAimSwayEnabled, function(v) tcNoAimSwayEnabled = v end)
 tcWeaponSec:addToggle("NoScopeSway (Dürbün Sallanması Yok)", tcNoScopeSwayEnabled, function(v) tcNoScopeSwayEnabled = v end)
-tcWeaponSec:addToggle("Infinite Ammo (Sınırsız Mermi)", tcInfiniteAmmoEnabled, function(v) tcInfiniteAmmoEnabled = v end)
-tcWeaponSec:addToggle("FireRate Boost (Hızlı Ateş Etme)", tcFireRateEnabled, function(v) tcFireRateEnabled = v end)
+tcWeaponSec:addToggle("Infinite Ammo (Sınırsız Mermi & Şarjör)", tcInfiniteAmmoEnabled, function(v) tcInfiniteAmmoEnabled = v end)
+tcWeaponSec:addToggle("FireRate Boost (Ultra Hızlı Seri Ateş)", tcFireRateEnabled, function(v) tcFireRateEnabled = v end)
+tcWeaponSec:addToggle("Instant Reload (Anında Şarjör Değiştirme)", tcInstantReloadEnabled, function(v) tcInstantReloadEnabled = v end)
+tcWeaponSec:addToggle("Full Auto Mode (Yarı Otomatikleri Otomatik Yap)", tcFullAutoEnabled, function(v) tcFullAutoEnabled = v end)
+tcWeaponSec:addToggle("Bullet Range & Velocity Boost (Menzil & Hız Artırma)", tcBulletRangeBoostEnabled, function(v) tcBulletRangeBoostEnabled = v end)
+tcWeaponSec:addToggle("Always Headshot Modifier (Kafa Hasarı Yönlendirme)", tcAlwaysHeadshotEnabled, function(v) tcAlwaysHeadshotEnabled = v end)
+
+-- SILAH MODİFİKASYONLARINI DERİNLEMESİNE UYGULAYAN TASK
+table.insert(AllTasks, task.spawn(function()
+    while scriptRunning do
+        task.wait(0.1)
+        pcall(function()
+            local char = LocalPlayer.Character
+            local tools = {}
+            if char then
+                for _, t in ipairs(char:GetChildren()) do if t:IsA("Tool") then table.insert(tools, t) end end
+            end
+            local bp = LocalPlayer:FindFirstChild("Backpack")
+            if bp then
+                for _, t in ipairs(bp:GetChildren()) do if t:IsA("Tool") then table.insert(tools, t) end end
+            end
+
+            for _, tool in ipairs(tools) do
+                -- Full Auto Modifier
+                if tcFullAutoEnabled then
+                    if tool:FindFirstChild("Auto") and tool.Auto:IsA("BoolValue") then tool.Auto.Value = true end
+                    if tool:FindFirstChild("Mode") and (tool.Mode:IsA("StringValue") or tool.Mode:IsA("IntValue")) then tool.Mode.Value = "Auto" end
+                    tool:SetAttribute("Auto", true)
+                    tool:SetAttribute("FireMode", "Auto")
+                end
+
+                -- Instant Reload & Infinite Ammo
+                if tcInstantReloadEnabled or tcInfiniteAmmoEnabled then
+                    for _, v in ipairs(tool:GetDescendants()) do
+                        if v:IsA("NumberValue") or v:IsA("IntValue") then
+                            local name = v.Name:lower()
+                            if tcInstantReloadEnabled and (name:find("reload") or name:find("reloadtime")) then
+                                v.Value = 0
+                            end
+                            if tcInfiniteAmmoEnabled and (name:find("ammo") or name:find("clip") or name:find("mag")) then
+                                v.Value = 999
+                            end
+                        end
+                    end
+                end
+
+                -- Bullet Range & Velocity Boost
+                if tcBulletRangeBoostEnabled then
+                    for _, v in ipairs(tool:GetDescendants()) do
+                        if v:IsA("NumberValue") or v:IsA("IntValue") then
+                            local name = v.Name:lower()
+                            if name:find("range") or name:find("dist") or name:find("speed") or name:find("velocity") then
+                                v.Value = 99999
+                            end
+                        end
+                    end
+                    tool:SetAttribute("BulletSpeed", 10000)
+                    tool:SetAttribute("MaxDistance", 99999)
+                end
+
+                -- No Spread & No Recoil Deep Mod
+                if tcNoSpreadEnabled or tcNoRecoilEnabled then
+                    for _, v in ipairs(tool:GetDescendants()) do
+                        if v:IsA("NumberValue") or v:IsA("IntValue") then
+                            local name = v.Name:lower()
+                            if tcNoSpreadEnabled and (name:find("spread") or name:find("accuracy") or name:find("inaccuracy")) then
+                                v.Value = 0
+                            end
+                            if tcNoRecoilEnabled and (name:find("recoil") or name:find("kick")) then
+                                v.Value = 0
+                            end
+                        end
+                    end
+                end
+            end
+        end)
+    end
+end))
 
 local tcLightSec = TownCombatPage:addSection("Görüş & Harita Optimizasyonu")
 tcLightSec:addToggle("Fullbright (Geceyi Aydınlat)", tcFullBrightEnabled, function(v) tcToggleFullbright(v) end)
@@ -801,7 +910,7 @@ local function tcIsTeamMate(p)
     return false
 end
 
--- GELİŞTİRİLMİŞ AIMBOT HEDEF SEÇİMİ (OTOMATİK KEMİK VE EXTRAPOLATION DESTEKLİ)
+-- GELİŞTİRİLMİŞ AIMBOT HEDEF SEÇİMİ
 local function tcGetClosestTarget()
     local closestTarget = nil
     local shortestDist3D = math.huge
@@ -813,7 +922,7 @@ local function tcGetClosestTarget()
         pcall(function()
             if p ~= LocalPlayer and not tcIsTeamMate(p) and p.Character then
                 local hum = p.Character:FindFirstChildOfClass("Humanoid")
-                local targetPart = p.Character:FindFirstChild("Head") or p.Character:FindFirstChild("UpperTorso")
+                local targetPart = (tcAlwaysHeadshotEnabled and p.Character:FindFirstChild("Head")) or p.Character:FindFirstChild("Head") or p.Character:FindFirstChild("UpperTorso")
                 local root = p.Character:FindFirstChild("HumanoidRootPart")
                 if hum and hum.Health > 0 and targetPart and root then
                     if not tcWallCheckEnabled or tcIsPartVisible(targetPart, p.Character) then
@@ -840,7 +949,7 @@ local function tcGetClosestTarget()
             for _, obj in ipairs(workspace:GetDescendants()) do
                 if obj:IsA("Model") and obj ~= LocalPlayer.Character then
                     local hum = obj:FindFirstChildOfClass("Humanoid")
-                    local targetPart = obj:FindFirstChild("Head") or obj:FindFirstChild("UpperTorso")
+                    local targetPart = (tcAlwaysHeadshotEnabled and obj:FindFirstChild("Head")) or obj:FindFirstChild("Head") or obj:FindFirstChild("UpperTorso")
                     local root = obj:FindFirstChild("HumanoidRootPart") or targetPart
                     if hum and hum.Health > 0 and targetPart and root then
                         local isPlayer = false
@@ -1006,7 +1115,7 @@ table.insert(AllTasks, task.spawn(function()
     end
 end))
 
--- RENDERSTEPPED (GELİŞTİRİLMİŞ KAMERA SMOOTHNESS)
+-- RENDERSTEPPED
 table.insert(AllConnections, RunService.RenderStepped:Connect(function()
     if not scriptRunning then return end
 
@@ -1027,7 +1136,6 @@ table.insert(AllConnections, RunService.RenderStepped:Connect(function()
             if targetWorldPos then
                 local currentCF = Camera.CFrame
                 local targetCF = CFrame.lookAt(currentCF.Position, targetWorldPos, Vector3.new(0, 1, 0))
-                -- Daha pürüzsüz ve akıcı bir interpolasyon sağlandı
                 Camera.CFrame = currentCF:Lerp(targetCF, math.clamp(tcAimSmoothness * 1.5, 0.01, 1))
 
                 if tcQuickScopeEnabled then
@@ -1291,7 +1399,7 @@ end))
 -- =================================================================
 local CombatPage = Venyx:addPage("Combat & FPS", 8356815386)
 
-local cHvHSec = CombatPage:addSection("🔥 CS HvH Rage Bot & 360° FOV (Akıllı Görüş Açısı)")
+local cHvHSec = CombatPage:addSection("🔥 CS HvH Rage Bot & 360° FOV")
 cHvHSec:addToggle("⚡ Rage Bot (Anlık Snap & Otomatik Kilit)", false, function(v) end)
 cHvHSec:addToggle("🔄 360° FOV (Çevresel Tarama & En Yakın)", false, function(v) end)
 
@@ -1300,7 +1408,116 @@ cAimSec:addToggle("🎯 Aim Assist (Yumuşak Hedef Takibi)", false, function(v) 
 cAimSec:addToggle("🤫 Silent Aim (Güvenli Mikro-Snap Yönlendirme)", false, function(v) end)
 
 -- =================================================================
--- SEKME 6: DENEYSEL
+-- SEKME 6: SERVERHOPPER (YENİ SEKME - BİLGİ, REJOIN & DÜŞÜK MS)
+-- =================================================================
+local ServerHopperPage = Venyx:addPage("ServerHopper", 8356815386)
+
+local shInfoSec = ServerHopperPage:addSection("📊 Sunucu & Oyuncu Bilgileri")
+
+local function GetFriendCountInServer()
+    local friendCount = 0
+    pcall(function()
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and LocalPlayer:IsFriendsWith(p.UserId) then
+                friendCount = friendCount + 1
+            end
+        end
+    end)
+    return friendCount
+end
+
+shInfoSec:addButton("🔄 Sunucu İstatistiklerini Güncelle (F9 Yazdır)", function()
+    local totalPlayers = #Players:GetPlayers()
+    local maxPlayers = Players.MaxPlayers
+    local activeHours = string.format("%.2f", workspace.DistributedGameTime / 3600)
+    local friends = GetFriendCountInServer()
+
+    print("====== SUNUCU İSTATİSTİKLERİ (MadeByArman31) ======")
+    print("👥 Oyuncu Sayısı: " .. totalPlayers .. " / " .. maxPlayers)
+    print("🤝 Oyundaki Arkadaşlar: " .. friends)
+    print("⏳ Sunucu Aktiflik Süresi: " .. activeHours .. " Saat")
+    print("=================================================")
+end)
+
+shInfoSec:addButton("👥 Oyundaki Arkadaşlarım: " .. GetFriendCountInServer() .. " Kişi", function() end)
+
+local shActionSec = ServerHopperPage:addSection("⚡ Sunucu İşlemleri & Hop")
+
+-- REJOIN METODU
+shActionSec:addButton("🔄 MEVCUT SUNUCUYA REJOIN AT", function()
+    pcall(function()
+        if #Players:GetPlayers() <= 1 then
+            LocalPlayer:Kick("\n[ServerHopper] Rejoin başlatılıyor...")
+            task.wait(0.5)
+            TeleportService:Teleport(game.PlaceId, LocalPlayer)
+        else
+            TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer)
+        end
+    end)
+end)
+
+-- DÜŞÜK MS & OPTİMAL SUNUCU BULUP JOIN ATMA
+local function HopToLowPingServer()
+    print("[ServerHopper] Düşük MS'li sunucular taranıyor...")
+    pcall(function()
+        local placeId = game.PlaceId
+        local req = (syn and syn.request) or (http and http.request) or http_request or (fluxus and fluxus.request) or request
+        if not req then
+            local serversApi = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/0?sortOrder=Asc&limit=100"
+            local rawData = game:HttpGet(serversApi)
+            local data = HttpService:JSONDecode(rawData)
+            if data and data.data then
+                for _, s in ipairs(data.data) do
+                    if s.id ~= game.JobId and s.playing < s.maxPlayers then
+                        TeleportService:TeleportToPlaceInstance(placeId, s.id, LocalPlayer)
+                        return
+                    end
+                end
+            end
+        else
+            local serversApi = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/0?sortOrder=Asc&limit=100"
+            local response = req({Url = serversApi, Method = "GET"})
+            if response and response.Body then
+                local data = HttpService:JSONDecode(response.Body)
+                if data and data.data then
+                    local bestServer = nil
+                    local lowestPing = 9999
+                    
+                    for _, s in ipairs(data.data) do
+                        if s.id ~= game.JobId and s.playing < s.maxPlayers then
+                            local ping = s.ping or 999
+                            if ping < lowestPing then
+                                lowestPing = ping
+                                bestServer = s.id
+                            end
+                        end
+                    end
+                    
+                    if bestServer then
+                        print("[ServerHopper] En Düşük MS Sunucu Bulundu! (" .. lowestPing .. "ms) Bağlanılıyor...")
+                        TeleportService:TeleportToPlaceInstance(placeId, bestServer, LocalPlayer)
+                    else
+                        print("[ServerHopper] Uygun sunucu bulunamadı, rastgele hop atılıyor...")
+                        TeleportService:Teleport(placeId, LocalPlayer)
+                    end
+                end
+            end
+        end
+    end)
+end
+
+shActionSec:addButton("🚀 DÜŞÜK MS SUNUCUYA JOIN AT (Server Hop)", function()
+    HopToLowPingServer()
+end)
+
+shActionSec:addButton("🔀 RASTGELE FARKLI SUNUCUYA BAĞLAN", function()
+    pcall(function()
+        TeleportService:Teleport(game.PlaceId, LocalPlayer)
+    end)
+end)
+
+-- =================================================================
+-- SEKME 7: DENEYSEL
 -- =================================================================
 local ExperimentalPage = Venyx:addPage("Deneysel", 8356815386)
 local expSec = ExperimentalPage:addSection("DummyRain Path Yöneticisi")
@@ -1325,7 +1542,7 @@ expSec:addButton("📍 DummyRain Dummylerini Yanıma Getir", function()
 end)
 
 -- =================================================================
--- SEKME 7: CONFIG & HUB
+-- SEKME 8: CONFIG & HUB
 -- =================================================================
 local ConfigPage = Venyx:addPage("Config & Hub", 8356815386)
 local confSec = ConfigPage:addSection("Profil Yöneticisi")
@@ -1350,7 +1567,7 @@ confSec:addButton("📂 PROFİLİ YÜKLE 📂", function()
 end)
 
 -- =================================================================
--- SEKME 8: TEMA & KAPAT
+-- SEKME 9: TEMA & KAPAT
 -- =================================================================
 local SettingsPage = Venyx:addPage("Tema & Kapat", 8356815386)
 local themeSec = SettingsPage:addSection("Manuel UI Tema Özelleştirme")
@@ -1389,6 +1606,7 @@ sysSec:addButton("❌ SCRIPTİ TAMAMEN SİL VE KAPAT ❌", function()
     table.clear(AllTasks)
 
     if tcFovDrawing then pcall(function() tcFovDrawing:Remove() end) end
+    if watermarkText then pcall(function() watermarkText:Remove() end) end
     pcall(function() hmLine1:Remove() hmLine2:Remove() hmLine3:Remove() hmLine4:Remove() end)
     for _, dotData in ipairs(activePenetrationDots) do pcall(function() dotData.Dot:Remove() end) end
 
@@ -1431,15 +1649,15 @@ sysSec:addButton("❌ SCRIPTİ TAMAMEN SİL VE KAPAT ❌", function()
         end
     end)
 
-    print("[Tuner & Combat2 | MadeByArman] Script tamamen temizlendi ve kapatıldı!")
+    print("[Tuner & Combat2 | MadeByArman31] Script tamamen temizlendi ve kapatıldı!")
 end)
 
 -- =================================================================
--- SEKME 9: MADEBYARMAN (CREDITS)
+-- SEKME 10: MADEBYARMAN31 (CREDITS)
 -- =================================================================
-local CreditPage = Venyx:addPage("MadeByArman", 8356815386)
+local CreditPage = Venyx:addPage("MadeByArman31", 8356815386)
 local creditSec = CreditPage:addSection("Geliştirici Bilgileri")
-creditSec:addButton("MadeByArman Tarafından Geliştirilmiştir", function() end)
+creditSec:addButton("MadeByArman31 Tarafından Geliştirilmiştir", function() end)
 
 table.insert(AllConnections, UserInputService.JumpRequest:Connect(function()
     if scriptRunning and velocityEnabled and carJumpEnabled then
@@ -1499,4 +1717,4 @@ table.insert(AllConnections, RunService.Heartbeat:Connect(function(deltaTime)
     end)
 end))
 
-print("[Tuner & Combat2 | MadeByArman] Gelişmiş aim ve öngörü sistemi başarıyla entegre edildi!")
+print("[Tuner & Combat2 | MadeByArman31] Gelişmiş aim, ServerHopper ve hitbox sistemi başarıyla yüklendi!")
