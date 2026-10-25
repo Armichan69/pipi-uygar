@@ -4,6 +4,23 @@
 -- =================================================================
 
 print("[Tuner & Combat2 | MadeByArman] Gelişmiş Aim ve Extrapolation Sistemi Yükleniyor...")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+print("UYGARIN GÖT DELİĞİ BÜM BÜYÜK")
+
 
 local successLib, VenyxLibrary = pcall(function()
     return loadstring(game:HttpGet("https://raw.githubusercontent.com/Armichan69/UniversalCarTuner/refs/heads/main/universalcarchanger"))()
