@@ -14,7 +14,7 @@ if not successLib or not VenyxLibrary then
     return
 end
 
-local Venyx = VenyxLibrary.new("Tuner V8.8.10 |  pipi uygar", 5013109572)
+local Venyx = VenyxLibrary.new("Tuner V8.8.10 |  MadeByArman", 5013109572)
 
 -- NEON MOR & CYBERPUNK PREMIUM TEMA (GÜZELLEŞTİRİLMİŞ)
 local CurrentTheme = {
@@ -359,10 +359,10 @@ for _, l in ipairs({hmLine1, hmLine2, hmLine3, hmLine4}) do
     l.Color = Color3.fromRGB(255, 255, 255)
 end
 
--- WATERMARK DRAWING (PipiUygar)
+-- WATERMARK DRAWING (.)
 local watermarkText = Drawing.new("Text")
 watermarkText.Visible = true
-watermarkText.Text = "PipiUygar"
+watermarkText.Text = "..."
 watermarkText.Size = 14
 watermarkText.Position = Vector2.new(15, 15)
 watermarkText.Color = Color3.fromRGB(170, 50, 255)
